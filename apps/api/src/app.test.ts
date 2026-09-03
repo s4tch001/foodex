@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const database = vi.hoisted(() => ({
   findUser: vi.fn(),
   createRecentSearch: vi.fn(),
+  deleteRecentSearch: vi.fn(),
   findProcessedEvent: vi.fn(),
   createProcessedEvent: vi.fn(),
 }));
@@ -24,7 +25,7 @@ vi.mock('./db.js', () => ({
     recentSearch: {
       create: database.createRecentSearch,
       findMany: vi.fn(),
-      deleteMany: vi.fn(),
+      deleteMany: database.deleteRecentSearch,
     },
     processedWebhookEvent: {
       findUnique: database.findProcessedEvent,
@@ -77,6 +78,7 @@ describe('Express app integration', () => {
     vi.clearAllMocks();
     database.findUser.mockResolvedValue({ id: 'user_1' });
     database.createRecentSearch.mockResolvedValue({ id: 'search_1' });
+    database.deleteRecentSearch.mockResolvedValue({ count: 1 });
     database.findProcessedEvent.mockResolvedValue(null);
     database.createProcessedEvent.mockResolvedValue({ id: 'evt_1' });
     provider.searchProducts.mockResolvedValue({
@@ -171,6 +173,21 @@ describe('Express app integration', () => {
 
     expect(database.createRecentSearch).toHaveBeenCalledWith({
       data: { userId: 'user_1', query: 'oat milk', locale: 'nl' },
+    });
+  });
+
+  it('deletes one recent search only for its signed-in owner', async () => {
+    const client = request.agent(createApp('http://localhost:3000', stripeConfig, authConfig));
+    await client.post('/api/auth/login').send({
+      email: authConfig.email,
+      password: authConfig.password,
+    });
+
+    const response = await client.delete('/api/recent-searches/search_1');
+
+    expect(response.status).toBe(204);
+    expect(database.deleteRecentSearch).toHaveBeenCalledWith({
+      where: { id: 'search_1', userId: 'user_1' },
     });
   });
 

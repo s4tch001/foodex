@@ -96,7 +96,7 @@ async function mockAuthenticatedSession(page: Page, status = 'INACTIVE') {
   await page.route('http://localhost:4000/api/auth/session', (route) =>
     route.fulfill({ json: { authenticated: true, user: { email: 'demo@technicaltest.local' } } }),
   );
-  await page.route('http://localhost:4000/api/recent-searches', (route) =>
+  await page.route('http://localhost:4000/api/recent-searches**', (route) =>
     route.fulfill(
       route.request().method() === 'DELETE'
         ? { status: 204 }
@@ -246,8 +246,13 @@ test('hydrates an active session and reuses recent searches', async ({ page }) =
   await mockAuthenticatedSession(page);
   await page.goto('/');
   await expect(page.getByRole('navigation', { name: 'Recent searches' })).toBeVisible();
-  await page.getByRole('button', { name: /oat milk/ }).click();
+  await page.locator('.recent-search-query').filter({ hasText: 'oat milk' }).click();
   await expect(page.getByRole('heading', { name: 'Nutella' })).toBeVisible();
+  await page.getByRole('button', { name: 'Delete recent search: oat milk' }).click();
+  await expect(page.locator('.recent-search-item').filter({ hasText: 'oat milk' })).toHaveCount(0);
+  await expect(
+    page.locator('.recent-search-item').filter({ hasText: 'dark chocolate' }),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Clear recent searches' }).click();
   await expect(page.getByRole('navigation', { name: 'Recent searches' })).toHaveCount(0);
 });

@@ -49,7 +49,7 @@ This document describes the implemented application boundaries and the security-
 - Public visitors can search and receive only product name, brand, image, and barcode data.
 - The API strips nutrition from every public search response.
 - Signed-in searches are stored as `RecentSearch` records for the configured demo user.
-- The client displays that private history directly beneath the search form, where a user can reuse a prior query.
+- The client displays that private history directly beneath the search form, where a user can reuse, individually delete, or clear prior queries.
 
 ## Frontend Scope
 

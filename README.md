@@ -117,19 +117,20 @@ If a stored test customer was deleted in Stripe, the next Checkout attempt creat
 
 ## API summary
 
-| Endpoint                       | Access                 | Purpose                                            |
-| ------------------------------ | ---------------------- | -------------------------------------------------- |
-| `POST /api/auth/login`         | Public                 | Validate demo credentials and issue a session      |
-| `POST /api/auth/logout`        | Session                | Clear the session                                  |
-| `GET /api/auth/session`        | Session                | Return the current authentication state            |
-| `GET /api/products/search`     | Public                 | Search products; save signed-in first-page queries |
-| `GET /api/recent-searches`     | Session                | Return private search history                      |
-| `DELETE /api/recent-searches`  | Session                | Clear private search history                       |
-| `GET /api/subscription`        | Session                | Reconcile and return subscription state            |
-| `POST /api/checkout`           | Session                | Create a Stripe subscription Checkout Session      |
-| `POST /api/checkout/complete`  | Session                | Reconcile a verified returned Checkout Session     |
-| `POST /api/stripe/webhook`     | Stripe signature       | Persist authoritative subscription changes         |
-| `POST /api/products/nutrition` | Session + subscription | Return protected nutrition for up to 20 products   |
+| Endpoint                          | Access                 | Purpose                                            |
+| --------------------------------- | ---------------------- | -------------------------------------------------- |
+| `POST /api/auth/login`            | Public                 | Validate demo credentials and issue a session      |
+| `POST /api/auth/logout`           | Session                | Clear the session                                  |
+| `GET /api/auth/session`           | Session                | Return the current authentication state            |
+| `GET /api/products/search`        | Public                 | Search products; save signed-in first-page queries |
+| `GET /api/recent-searches`        | Session                | Return private search history                      |
+| `DELETE /api/recent-searches`     | Session                | Clear private search history                       |
+| `DELETE /api/recent-searches/:id` | Session                | Delete one owned recent-search entry               |
+| `GET /api/subscription`           | Session                | Reconcile and return subscription state            |
+| `POST /api/checkout`              | Session                | Create a Stripe subscription Checkout Session      |
+| `POST /api/checkout/complete`     | Session                | Reconcile a verified returned Checkout Session     |
+| `POST /api/stripe/webhook`        | Stripe signature       | Persist authoritative subscription changes         |
+| `POST /api/products/nutrition`    | Session + subscription | Return protected nutrition for up to 20 products   |
 
 ## Technical decisions
 

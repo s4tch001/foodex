@@ -392,21 +392,40 @@ button:disabled {
   flex-wrap: wrap;
   gap: 8px;
 }
-.recent-searches button {
+.recent-search-item {
+  display: flex;
   border: 1px solid #cbd3db;
   background: var(--paper);
+}
+.recent-searches button {
+  border: 0;
+  background: transparent;
   color: var(--ink);
   padding: 8px 10px;
   font-size: 12px;
   text-align: left;
 }
-.recent-searches button:hover {
+.recent-search-item:hover {
   border-color: var(--accent);
+}
+.recent-search-query:hover {
   color: var(--accent);
 }
 .recent-searches button b {
   margin-left: 10px;
   font-size: 13px;
+}
+.recent-searches .delete-recent {
+  width: 32px;
+  padding: 6px 9px;
+  border-left: 1px solid #cbd3db;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  text-align: center;
+}
+.recent-searches .delete-recent:hover {
+  color: #b42318;
 }
 .subscription-callout {
   display: flex;

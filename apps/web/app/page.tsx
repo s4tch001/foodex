@@ -30,6 +30,7 @@ const words = {
     loadingNutrition: 'Loading nutrition...',
     recent: 'Recent searches',
     clearRecent: 'Clear recent searches',
+    deleteRecent: 'Delete recent search',
     previous: 'Previous',
     next: 'Next',
     enterQuery: 'Enter at least two characters to search.',
@@ -76,6 +77,7 @@ const words = {
     loadingNutrition: 'Voeding laden...',
     recent: 'Recente zoekopdrachten',
     clearRecent: 'Recente zoekopdrachten wissen',
+    deleteRecent: 'Recente zoekopdracht verwijderen',
     previous: 'Vorige',
     next: 'Volgende',
     enterQuery: 'Voer minstens twee tekens in om te zoeken.',
@@ -122,6 +124,7 @@ const words = {
     loadingNutrition: 'Nährwerte werden geladen...',
     recent: 'Letzte Suchen',
     clearRecent: 'Letzte Suchen löschen',
+    deleteRecent: 'Letzte Suche löschen',
     previous: 'Zurück',
     next: 'Weiter',
     enterQuery: 'Gib mindestens zwei Zeichen für die Suche ein.',
@@ -169,6 +172,7 @@ const words = {
     loadingNutrition: 'Chargement de la nutrition...',
     recent: 'Recherches récentes',
     clearRecent: 'Effacer les recherches',
+    deleteRecent: 'Supprimer la recherche récente',
     previous: 'Précédent',
     next: 'Suivant',
     enterQuery: 'Saisissez au moins deux caractères pour rechercher.',
@@ -467,6 +471,17 @@ export default function HomePage() {
       setNotice('searchError');
     }
   }
+  async function deleteRecentSearch(id: string) {
+    try {
+      const response = await apiRequest(`/api/recent-searches/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error();
+      setRecentSearches((current) => current.filter((search) => search.id !== id));
+    } catch {
+      setNotice('searchError');
+    }
+  }
   function selectProduct() {
     if (!authenticated) {
       preserveSearchForReturn();
@@ -637,16 +652,26 @@ export default function HomePage() {
           </div>
           <nav aria-label={text.recent}>
             {recentSearches.map((search) => (
-              <button
-                key={search.id}
-                onClick={() => {
-                  setQuery(search.query);
-                  void searchFor(search.query);
-                }}
-              >
-                {search.query}
-                <b>↗</b>
-              </button>
+              <div className="recent-search-item" key={search.id}>
+                <button
+                  className="recent-search-query"
+                  onClick={() => {
+                    setQuery(search.query);
+                    void searchFor(search.query);
+                  }}
+                >
+                  {search.query}
+                  <b>↗</b>
+                </button>
+                <button
+                  className="delete-recent"
+                  type="button"
+                  aria-label={`${text.deleteRecent}: ${search.query}`}
+                  onClick={() => void deleteRecentSearch(search.id)}
+                >
+                  ×
+                </button>
+              </div>
             ))}
           </nav>
         </section>

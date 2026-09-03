@@ -28,7 +28,7 @@
 | Stripe webhooks                   | Raw-body signature verification and event ID idempotency model       |
 | Secrets in environment variables  | `.env.example`, ignored `.env`, configuration validation             |
 
-The automated suite currently contains 21 API unit/integration tests and 13 Playwright browser tests. A real MySQL migration and Stripe test-mode Checkout/webhook walkthrough remain manual acceptance checks because the automated tests use isolated provider and persistence doubles.
+The automated suite currently contains 22 API unit/integration tests and 13 Playwright browser tests. A real MySQL migration and Stripe test-mode Checkout/webhook walkthrough remain manual acceptance checks because the automated tests use isolated provider and persistence doubles.
 
 ## Final Commands
 

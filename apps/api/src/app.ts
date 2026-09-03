@@ -111,6 +111,23 @@ export function createApp(
     }
   });
 
+  app.delete('/api/recent-searches/:id', async (request, response, next) => {
+    if (!authConfig || !hasValidDemoSession(request, authConfig.email, authConfig.sessionSecret))
+      return response.status(401).json({ message: 'Sign in to delete a recent search.' });
+    const searchId = z.string().trim().min(1).max(191).safeParse(request.params.id);
+    if (!searchId.success) return response.status(400).json({ message: 'Invalid search ID.' });
+    try {
+      const user = await getDemoUser(authConfig.email);
+      // Include the owner in the delete condition so one account cannot delete another account's data.
+      await prisma.recentSearch.deleteMany({
+        where: { id: searchId.data, userId: user.id },
+      });
+      response.sendStatus(204);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.get('/api/subscription', async (request, response, next) => {
     if (!authConfig || !hasValidDemoSession(request, authConfig.email, authConfig.sessionSecret))
       return response.status(401).json({ message: 'Sign in to view subscription status.' });
