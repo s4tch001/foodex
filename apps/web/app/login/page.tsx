@@ -82,9 +82,11 @@ const loginWords = {
   },
 } as const;
 
+// The demo credentials are displayed only for this assignment's local review flow.
 type DemoCredentials = { email: string; password: string };
 
 export default function LoginPage() {
+  // The login route owns form state, locale state, and the demo-session hand-off.
   const [locale, setLocale] = useState<SupportedLocale>('en');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -95,6 +97,7 @@ export default function LoginPage() {
   const text = loginWords[locale];
 
   function changeLocale(value: SupportedLocale) {
+    // Keep login copy and the document language aligned with the selected locale.
     setLocale(value);
     document.documentElement.lang = value;
     localStorage.setItem('foodex-locale', value);
@@ -127,6 +130,7 @@ export default function LoginPage() {
   }, []);
 
   async function login(event: React.FormEvent) {
+    // Submit credentials to the API; the server issues the HttpOnly session cookie on success.
     event.preventDefault();
     setBusy(true);
     setLoginFailed(false);
@@ -155,6 +159,7 @@ export default function LoginPage() {
     );
   }
 
+  // Render the branded login page and the optional assignment demo-credential helper.
   return (
     <main className="auth-page grid min-h-screen lg:grid-cols-[1.15fr_0.85fr]">
       <section className="auth-intro">

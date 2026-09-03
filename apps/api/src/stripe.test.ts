@@ -1,3 +1,4 @@
+// These tests exercise the server-only Stripe integration without making network calls.
 import Stripe from 'stripe';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -15,12 +16,14 @@ vi.mock('./db.js', () => ({
 
 import { createSubscriptionCheckout, processSubscriptionEvent } from './stripe.js';
 
+// Cover customer recovery, error boundaries, and entitlement persistence.
 describe('createSubscriptionCheckout', () => {
   beforeEach(() => {
     database.updateUser.mockReset();
     database.upsertSubscription.mockReset();
   });
 
+  // A deleted test customer should be repaired transparently before Checkout continues.
   it('replaces a locally stored customer that was deleted from Stripe', async () => {
     const createSession = vi
       .fn()
@@ -59,6 +62,7 @@ describe('createSubscriptionCheckout', () => {
     });
   });
 
+  // Unrelated Stripe errors must not create duplicate customers or hide the real failure.
   it('does not replace a customer for unrelated Stripe errors', async () => {
     const stripe = {
       customers: { create: vi.fn() },
@@ -90,6 +94,7 @@ describe('createSubscriptionCheckout', () => {
     expect(stripe.customers.create).not.toHaveBeenCalled();
   });
 
+  // The entitlement record must use the current billing period exposed by Stripe items.
   it('persists the Stripe item period used by the backend entitlement guard', async () => {
     const currentPeriodEnd = 1_800_000_000;
     const subscription = {

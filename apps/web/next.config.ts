@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next';
 
+// Keep Next.js strict while allowing optimized rendering of provider-hosted product images.
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {

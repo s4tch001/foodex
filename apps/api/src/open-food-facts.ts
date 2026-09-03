@@ -1,9 +1,11 @@
 import type { ProductNutrition, ProductSummary, SupportedLocale } from '@foodex/shared';
 
+// Provider endpoints and field selections are kept together so upstream requests are easy to audit.
 const SEARCH_API_URL = 'https://search.openfoodfacts.org/search';
 const LEGACY_SEARCH_API_URL = 'https://world.openfoodfacts.org/cgi/search.pl';
 const PRODUCT_FIELDS =
   'code,brands,image_front_small_url,product_name,product_name_en,product_name_nl,product_name_de,product_name_fr,nutriments';
+// A fixed page size keeps the UI stable and bounds each provider response.
 const PRODUCT_PAGE_SIZE = 20;
 const NUTRITION_BATCH_SIZE = 5;
 const PRODUCT_CACHE_LIMIT = 500;
@@ -12,20 +14,26 @@ const PAGE_CACHE_TTL_MS = 15 * 60 * 1_000;
 const PAGE_CACHE_STALE_TTL_MS = 24 * 60 * 60 * 1_000;
 const PRODUCT_FAILURE_TTL_MS = 60 * 1_000;
 const SEARCH_REQUEST_INTERVAL_MS = 6_100;
+// Identify the application as requested by the Open Food Facts API guidelines.
 const REQUEST_HEADERS = {
   'User-Agent': 'Foodex/0.1 (contact: s4tch001@users.noreply.github.com)',
 };
 
+// Public search results deliberately omit protected nutrition values.
 type PublicProductSummary = Omit<ProductSummary, 'nutrition'>;
 
 /** Products loaded for protected nutrition plus barcodes whose provider request failed. */
 export interface ProductBatchResult {
+  /** Products successfully loaded for the requested barcodes. */
   products: ProductSummary[];
+  /** Barcodes that failed after provider fallback attempts. */
   failedBarcodes: string[];
 }
 /** One provider-ranked search page and the navigation state exposed to the browser. */
 export interface ProductSearchPage {
+  /** Products returned for this provider-ranked page. */
   products: ProductSummary[];
+  /** Minimal navigation state needed by the web client. */
   pagination: {
     page: number;
     hasNext: boolean;
@@ -46,6 +54,7 @@ const pageRequests = new Map<string, Promise<ProductSearchPage>>();
 let nextSearchRequestAt = 0;
 let searchRequestQueue = Promise.resolve();
 
+// This is the small subset of the provider response used by Foodex.
 interface OpenFoodFactsProduct {
   code?: string;
   brands?: string | string[];
@@ -58,6 +67,7 @@ interface OpenFoodFactsProduct {
   nutriments?: Record<string, unknown>;
 }
 
+// Search endpoints have returned both `hits` and `products` shapes over time.
 interface SearchResponse {
   count?: number;
   page?: number;
@@ -68,6 +78,7 @@ interface SearchResponse {
 }
 
 async function fetchOpenFoodFacts(url: URL): Promise<Response> {
+  // Abort slow upstream calls so one provider outage cannot hold an API request forever.
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8_000);
   try {
@@ -78,6 +89,7 @@ async function fetchOpenFoodFacts(url: URL): Promise<Response> {
 }
 
 async function fetchWithRetry(url: URL): Promise<Response> {
+  // Retry only transient provider responses and respect a short Retry-After delay.
   let response = await fetchOpenFoodFacts(url);
   if (![429, 502, 503, 504].includes(response.status)) return response;
 
@@ -90,6 +102,7 @@ async function fetchWithRetry(url: URL): Promise<Response> {
 }
 
 function fetchOpenFoodFactsSearch(url: URL): Promise<Response> {
+  // Serialize legacy search calls to remain below Open Food Facts' documented request limit.
   if (process.env.NODE_ENV === 'test') return fetchOpenFoodFacts(url);
 
   const request = searchRequestQueue.then(async () => {
@@ -106,6 +119,7 @@ function fetchOpenFoodFactsSearch(url: URL): Promise<Response> {
 }
 
 function optionalNumber(value: unknown): number | undefined {
+  // Ignore malformed nutrition values instead of exposing NaN or non-numeric data to clients.
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
@@ -118,6 +132,7 @@ function localizeName(product: OpenFoodFactsProduct, locale: SupportedLocale): s
 }
 
 function mapNutrition(nutriments: Record<string, unknown> | undefined): ProductNutrition {
+  // Translate provider field names into the stable nutrition contract shared with the web app.
   return {
     energyKcal: optionalNumber(nutriments?.['energy-kcal_100g']),
     fat: optionalNumber(nutriments?.fat_100g),
@@ -132,6 +147,7 @@ function mapNutrition(nutriments: Record<string, unknown> | undefined): ProductN
 
 /** Normalizes an Open Food Facts record into Foodex's stable product contract. */
 export function mapProduct(product: OpenFoodFactsProduct, locale: SupportedLocale): ProductSummary {
+  // Normalize brands, names, images, and nutrition into one predictable product shape.
   const brand = Array.isArray(product.brands) ? product.brands.join(', ') : product.brands;
   return {
     barcode: product.code ?? '',
@@ -143,6 +159,7 @@ export function mapProduct(product: OpenFoodFactsProduct, locale: SupportedLocal
 }
 
 function cacheProduct(barcode: string, product: ProductSummary | null) {
+  // Refresh insertion order so frequently used products remain in the bounded cache longer.
   productCache.delete(barcode);
   productCache.set(barcode, product);
   if (productCache.size > PRODUCT_CACHE_LIMIT) {
@@ -152,6 +169,7 @@ function cacheProduct(barcode: string, product: ProductSummary | null) {
 }
 
 function cacheProducts(products: ProductSummary[]) {
+  // Cache successful product records and clear any temporary failure marker for them.
   for (const product of products) {
     if (product.barcode) {
       productFailures.delete(product.barcode);
@@ -161,6 +179,7 @@ function cacheProducts(products: ProductSummary[]) {
 }
 
 function cachePage(key: string, page: ProductSearchPage) {
+  // Store both a fresh and stale expiry so short provider outages can serve known results.
   pageCache.delete(key);
   pageCache.set(key, {
     expiresAt: Date.now() + PAGE_CACHE_TTL_MS,
@@ -174,6 +193,7 @@ function cachePage(key: string, page: ProductSearchPage) {
 }
 
 function getCachedPage(key: string): ProductSearchPage | null {
+  // Return only fresh pages; expired entries are removed or left available as stale fallbacks.
   const cached = pageCache.get(key);
   if (!cached) return null;
   if (cached.staleUntil <= Date.now()) {
@@ -187,6 +207,7 @@ function getCachedPage(key: string): ProductSearchPage | null {
 }
 
 function requestCachedPage(key: string, load: () => Promise<ProductSearchPage>) {
+  // Coalesce concurrent requests for the same page into one upstream call.
   const cached = getCachedPage(key);
   if (cached) return Promise.resolve(cached);
   const existingRequest = pageRequests.get(key);
@@ -212,6 +233,7 @@ function mapSearchPage(
   locale: SupportedLocale,
   requestedPage: number,
 ): ProductSearchPage {
+  // Convert provider pagination metadata while filtering unusable records and caching products.
   const sourceProducts = payload.hits ?? payload.products ?? [];
   const products = sourceProducts
     .map((product) => mapProduct(product, locale))
@@ -277,6 +299,7 @@ async function getProductByBarcode(
   barcode: string,
   locale: SupportedLocale,
 ): Promise<ProductSummary | null> {
+  // Use the current product endpoint when a legacy batch lookup cannot be completed.
   const url = new URL(
     `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json`,
   );
@@ -291,6 +314,7 @@ async function loadProductChunk(
   barcodes: string[],
   locale: SupportedLocale,
 ): Promise<ProductBatchResult> {
+  // Load a small barcode batch first, then fall back to individual reads for partial resilience.
   const url = new URL(LEGACY_SEARCH_API_URL);
   url.searchParams.set('action', 'process');
   url.searchParams.set('code', barcodes.join(','));
@@ -340,6 +364,7 @@ async function loadProductsByBarcodes(
   barcodes: string[],
   locale: SupportedLocale,
 ): Promise<ProductBatchResult> {
+  // Reuse cached records and request only uncached barcodes in bounded chunks.
   const products: ProductSummary[] = [];
   const failedBarcodes: string[] = [];
   const uncachedBarcodes: string[] = [];
@@ -373,6 +398,7 @@ export function getProductsByBarcodes(
   barcodes: string[],
   locale: SupportedLocale,
 ): Promise<ProductBatchResult> {
+  // Deduplicate barcodes and share an in-flight request between identical nutrition consumers.
   const uniqueBarcodes = [...new Set(barcodes)];
   if (!uniqueBarcodes.length) return Promise.resolve({ products: [], failedBarcodes: [] });
 

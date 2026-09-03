@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
+// Share one Prisma client across route handlers to avoid opening a connection per request.
 export const prisma = new PrismaClient();
 
 /** Loads the seeded demo user and entitlement, failing clearly when setup is incomplete. */

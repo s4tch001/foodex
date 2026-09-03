@@ -5,6 +5,7 @@ import { loadConfig } from './config.js';
 // This workspace starts under apps/api, so load the repository-root local environment file explicitly.
 config({ path: '../../.env' });
 
+// Parse environment variables once, then build the API with validated settings.
 const environment = loadConfig();
 
 const app = createApp(
@@ -21,6 +22,7 @@ const app = createApp(
   },
 );
 
+// Start listening only after configuration and route construction have succeeded.
 app.listen(environment.API_PORT, () => {
   console.info(`Foodex API listening on port ${environment.API_PORT}`);
 });

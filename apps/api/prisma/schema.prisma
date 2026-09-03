@@ -1,12 +1,15 @@
+// Generate the typed Prisma client used by the API and seed script.
 generator client {
   provider = "prisma-client-js"
 }
 
+// Store the assignment data in the configured MySQL database.
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
+// Mirror the Stripe subscription lifecycle states used by the entitlement guard.
 enum SubscriptionStatus {
   INACTIVE
   ACTIVE
@@ -17,6 +20,7 @@ enum SubscriptionStatus {
   INCOMPLETE
 }
 
+// Keep one demo identity with its recent searches and optional subscription.
 model User {
   id               String         @id @default(cuid())
   email            String         @unique
@@ -27,6 +31,7 @@ model User {
   updatedAt        DateTime       @updatedAt
 }
 
+// Store the signed-in user's search history for the recent-searches panel.
 model RecentSearch {
   id        String   @id @default(cuid())
   query     String   @db.VarChar(120)
@@ -38,6 +43,7 @@ model RecentSearch {
   @@index([userId, createdAt])
 }
 
+// Persist the latest Stripe status used for backend nutrition authorization.
 model Subscription {
   id                   String             @id @default(cuid())
   stripeSubscriptionId String?            @unique
@@ -49,6 +55,7 @@ model Subscription {
   updatedAt            DateTime           @updatedAt
 }
 
+// Record processed Stripe event IDs so webhook delivery is idempotent.
 model ProcessedWebhookEvent {
   id        String   @id
   type      String   @db.VarChar(120)

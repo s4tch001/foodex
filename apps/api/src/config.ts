@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+// Validate all startup settings before the API begins accepting requests.
 const schema = z.object({
   API_PORT: z.coerce.number().int().positive().default(4000),
   WEB_ORIGIN: z.string().url().default('http://localhost:3000'),

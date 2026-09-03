@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { supportedLocales, type ProductSummary, type SupportedLocale } from '@foodex/shared';
 import { apiRequest } from './api-client';
 
+// Keep all visible landing-page copy in one locale-aware table for predictable translations.
 const words = {
   en: {
     login: 'Sign in',
@@ -199,6 +200,7 @@ const words = {
   },
 } as const;
 
+// These small UI types make status, history, pagination, and browser hand-off state explicit.
 type NoticeKey = 'enterQuery' | 'noMatches' | 'searchError' | 'checkoutError' | null;
 type RecentSearch = { id: string; query: string };
 type NutritionStatus = 'loading' | 'unavailable' | 'error';
@@ -220,9 +222,11 @@ type SearchReturnSnapshot = {
   products: PublicProductSummary[];
 };
 
+// This one-time key preserves the current public search while login or Checkout redirects occur.
 const searchReturnKey = 'foodex-search-return';
 
 function isSearchReturnSnapshot(value: unknown): value is SearchReturnSnapshot {
+  // Validate sessionStorage data before using it as React state after a navigation round trip.
   if (!value || typeof value !== 'object') return false;
   const snapshot = value as Partial<SearchReturnSnapshot>;
   return (
@@ -245,6 +249,7 @@ function isSearchReturnSnapshot(value: unknown): value is SearchReturnSnapshot {
 }
 
 export default function HomePage() {
+  // The landing page owns search, session, subscription, history, and nutrition display state.
   // Locale, session, and entitlement state control which interface and product data are visible.
   const [locale, setLocale] = useState<SupportedLocale>('en');
   const [authenticated, setAuthenticated] = useState(false);
@@ -271,12 +276,14 @@ export default function HomePage() {
   const text = words[locale];
 
   function changeLocale(value: SupportedLocale) {
+    // Persist the selected locale and refresh the active search using translated product names.
     setLocale(value);
     document.documentElement.lang = value;
     localStorage.setItem('foodex-locale', value);
     if (activeSearch) void searchFor(activeSearch, searchPage, value);
   }
   async function loadRecentSearches() {
+    // Recent searches are private, so an unauthenticated or failed request simply clears the list.
     try {
       const response = await apiRequest('/api/recent-searches');
       if (!response.ok) return;
@@ -288,6 +295,7 @@ export default function HomePage() {
   }
 
   useEffect(() => {
+    // Restore the user's preferred language when the browser loads the application.
     const saved = localStorage.getItem('foodex-locale');
     const nextLocale =
       saved && supportedLocales.includes(saved as SupportedLocale)
@@ -364,6 +372,7 @@ export default function HomePage() {
   }, [authenticated]);
 
   async function logout() {
+    // Clear local protected state after ending the server-side demo session.
     await apiRequest('/api/auth/logout', { method: 'POST' });
     setAuthenticated(false);
     setSubscriptionActive(false);
@@ -372,6 +381,7 @@ export default function HomePage() {
     setNotice(null);
   }
   async function search(event: React.FormEvent) {
+    // Submit the current input through the same guarded search path used by history and pagination.
     event.preventDefault();
     await searchFor(query);
   }
@@ -415,6 +425,7 @@ export default function HomePage() {
     }
   }
   function clearSearch() {
+    // Reset the landing page to its initial empty state and cancel any pending provider request.
     searchController.current?.abort();
     searchController.current = null;
     setQuery('');
@@ -426,6 +437,7 @@ export default function HomePage() {
     setBusy(false);
   }
   function changeQuery(value: string) {
+    // Treat an emptied input as an explicit clear so results and pagination cannot remain stale.
     if (!value.trim()) {
       clearSearch();
       return;
@@ -433,6 +445,7 @@ export default function HomePage() {
     setQuery(value);
   }
   function preserveSearchForReturn() {
+    // Save only public results; protected nutrition is intentionally never written to storage.
     if (!activeSearch || !products.length) return;
     const snapshot: SearchReturnSnapshot = {
       query: activeSearch,
@@ -444,6 +457,7 @@ export default function HomePage() {
     sessionStorage.setItem(searchReturnKey, JSON.stringify(snapshot));
   }
   async function checkout() {
+    // Send authenticated users to Stripe, or preserve the search before routing visitors to login.
     if (busy) return;
     if (!authenticated) {
       preserveSearchForReturn();
@@ -463,6 +477,7 @@ export default function HomePage() {
     }
   }
   async function clearRecentSearches() {
+    // Delete the signed-in user's complete search history after server authorization.
     try {
       const response = await apiRequest('/api/recent-searches', { method: 'DELETE' });
       if (!response.ok) throw new Error();
@@ -472,6 +487,7 @@ export default function HomePage() {
     }
   }
   async function deleteRecentSearch(id: string) {
+    // Delete one history entry and update the UI without reloading the whole page.
     try {
       const response = await apiRequest(`/api/recent-searches/${encodeURIComponent(id)}`, {
         method: 'DELETE',
@@ -483,6 +499,7 @@ export default function HomePage() {
     }
   }
   function selectProduct() {
+    // Product nutrition is subscription-gated, so this action starts sign-in or Checkout.
     if (!authenticated) {
       preserveSearchForReturn();
       window.location.assign('/login');
@@ -492,6 +509,7 @@ export default function HomePage() {
   }
 
   async function goToSearchPage(page: number) {
+    // Pagination always reuses the active query, keeping results and provider ranking consistent.
     if (activeSearch) await searchFor(activeSearch, page);
   }
 
@@ -502,6 +520,7 @@ export default function HomePage() {
     .join('|');
 
   useEffect(() => {
+    // Load nutrition only for visible products after the server confirms an active subscription.
     if (!authenticated || !subscriptionActive || !visibleNutritionBarcodes) return;
 
     const barcodes = visibleNutritionBarcodes
@@ -571,6 +590,7 @@ export default function HomePage() {
       </main>
     );
 
+  // Render the searchable catalog shell, optional account panels, product results, and footer.
   return (
     <main className="product-app mx-auto min-h-screen w-full max-w-6xl px-4 pb-16 md:px-7">
       <a className="skip-link" href="#results">

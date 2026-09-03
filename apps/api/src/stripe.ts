@@ -1,3 +1,4 @@
+// Stripe is used only on the server so secret keys never reach the browser.
 import Stripe from 'stripe';
 import { prisma } from './db.js';
 
@@ -7,6 +8,7 @@ export function createStripe(secretKey: string) {
 }
 
 async function createAndStoreCustomer(input: { stripe: Stripe; userId: string; email: string }) {
+  // Create a customer and persist its ID so later Checkout sessions can reuse it.
   const customer = await input.stripe.customers.create({
     email: input.email,
     metadata: { userId: input.userId },
@@ -22,6 +24,7 @@ async function createAndStoreCustomer(input: { stripe: Stripe; userId: string; e
 }
 
 function isMissingStripeResource(error: unknown, parameter: string) {
+  // Distinguish deleted test resources from unrelated Stripe failures before retrying.
   if (!error || typeof error !== 'object') return false;
   const stripeError = error as { code?: unknown; param?: unknown; type?: unknown };
   return (
@@ -41,6 +44,7 @@ export async function createSubscriptionCheckout(input: {
   successUrl: string;
   cancelUrl: string;
 }) {
+  // Create a monthly subscription Checkout session for the configured demo user.
   const createSession = (customerId: string) =>
     input.stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -76,6 +80,7 @@ export async function createSubscriptionCheckout(input: {
 }
 
 async function persistSubscription(subscription: Stripe.Subscription, userId: string) {
+  // Map Stripe statuses and billing dates into the local entitlement record.
   const statuses: Record<
     Stripe.Subscription.Status,
     'ACTIVE' | 'TRIALING' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'INCOMPLETE' | 'INACTIVE'
@@ -117,6 +122,7 @@ export async function syncCompletedCheckout(input: {
   customerId: string | null;
   checkoutSessionId?: string;
 }) {
+  // Reconcile the browser's return from Checkout without trusting browser-provided entitlement data.
   if (!input.customerId) return null;
   const sessions = input.checkoutSessionId
     ? [
@@ -154,6 +160,7 @@ export async function syncStoredSubscription(input: {
   userId: string;
   subscriptionId: string | null;
 }) {
+  // Refresh a previously known subscription and revoke access if Stripe no longer has it.
   if (!input.subscriptionId) return null;
   try {
     const subscription = await input.stripe.subscriptions.retrieve(input.subscriptionId);
@@ -173,6 +180,7 @@ export async function syncStoredSubscription(input: {
 
 /** Applies supported Stripe subscription events to the backend authorization record. */
 export async function processSubscriptionEvent(event: Stripe.Event) {
+  // Apply only subscription lifecycle events received through Stripe's signed webhook route.
   // Only Stripe subscription events can update the nutrition entitlement.
   if (!event.type.startsWith('customer.subscription.')) return;
   const subscription = event.data.object as Stripe.Subscription;

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 
+// Define the shared browser metadata, favicon, and social/app icon assets.
 export const metadata: Metadata = {
   title: 'Foodex | The Food Codex',
   description:
@@ -16,6 +17,7 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // The root layout supplies the document language shell for every route.
   return (
     <html lang="en">
       <body>{children}</body>

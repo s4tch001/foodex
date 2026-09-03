@@ -1,7 +1,10 @@
+// These tests document provider normalization, caching, pagination, and fallback behavior.
 import { describe, expect, it } from 'vitest';
 import { getProductsByBarcodes, mapProduct, searchProducts } from './open-food-facts.js';
 
+// Use mocked provider responses so tests remain deterministic and do not consume API quota.
 describe('Open Food Facts adapter', () => {
+  // Prefer the selected locale while preserving deterministic fallbacks.
   it('uses the requested localized title before English and original values', () => {
     expect(
       mapProduct(
@@ -16,6 +19,7 @@ describe('Open Food Facts adapter', () => {
     ).toBe('Francais');
   });
 
+  // Missing fields and malformed numbers should remain safe, explicit omissions.
   it('keeps incomplete data stable and maps numeric nutrition values only', () => {
     expect(
       mapProduct({ code: '123', nutriments: { proteins_100g: 8, salt_100g: 'unknown' } }, 'de'),
@@ -28,6 +32,7 @@ describe('Open Food Facts adapter', () => {
     });
   });
 
+  // The adapter should map one provider page and reuse it on a repeated request.
   it('returns and caches up to 20 relevant search results', async () => {
     const originalFetch = global.fetch;
     let requests = 0;
@@ -73,6 +78,7 @@ describe('Open Food Facts adapter', () => {
     }
   });
 
+  // Provider failures must be surfaced instead of silently inventing catalog data.
   it('reports an upstream search failure instead of showing invented fallback products', async () => {
     const originalFetch = global.fetch;
     global.fetch = async () => new Response('', { status: 503 });
@@ -86,6 +92,7 @@ describe('Open Food Facts adapter', () => {
     }
   });
 
+  // Visible nutrition records should be fetched together to reduce upstream calls.
   it('loads nutrition for visible products in one batch request', async () => {
     const originalFetch = global.fetch;
     let requestedUrl = '';
@@ -113,6 +120,7 @@ describe('Open Food Facts adapter', () => {
     }
   });
 
+  // Individual product reads keep nutrition resilient when the legacy batch endpoint is down.
   it('falls back to individual product reads when a batch request fails', async () => {
     const originalFetch = global.fetch;
     let requests = 0;
@@ -138,6 +146,7 @@ describe('Open Food Facts adapter', () => {
     }
   });
 
+  // A cached barcode should not trigger another provider request.
   it('reuses cached nutrition without another request', async () => {
     const originalFetch = global.fetch;
     let requests = 0;

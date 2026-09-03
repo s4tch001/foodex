@@ -3,9 +3,11 @@ import { PrismaClient } from '@prisma/client';
 
 config({ path: '../../.env' });
 
+// The seed script creates the single demo account expected by the assignment.
 const prisma = new PrismaClient();
 
 async function main() {
+  // Upsert makes the command safe to run repeatedly during local setup.
   // Keep the seeded database identity aligned with the environment-configured demo login.
   const email = process.env.DEMO_EMAIL;
   if (!email) throw new Error('DEMO_EMAIL must be configured before seeding the demo account.');

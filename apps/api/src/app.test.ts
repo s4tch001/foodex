@@ -1,3 +1,4 @@
+// These integration tests verify route validation, authorization, and webhook idempotency.
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -73,6 +74,7 @@ const fullProduct = {
   nutrition: { protein: 6 },
 };
 
+// Use mocked dependencies while exercising the real Express routing and cookie behavior.
 describe('Express app integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -103,6 +105,7 @@ describe('Express app integration', () => {
     subscription.processSubscriptionEvent.mockResolvedValue(undefined);
   });
 
+  // Public catalog responses must never leak protected nutrition fields.
   it('keeps nutrition out of the public search response', async () => {
     const response = await request(createApp('http://localhost:3000', stripeConfig, authConfig))
       .get('/api/products/search')
@@ -116,6 +119,7 @@ describe('Express app integration', () => {
     expect(response.body.products[0]).not.toHaveProperty('nutrition');
   });
 
+  // Anonymous callers cannot reach the nutrition provider endpoint.
   it('rejects nutrition access without a signed session', async () => {
     const response = await request(createApp('http://localhost:3000', stripeConfig, authConfig))
       .post('/api/products/nutrition')
@@ -125,6 +129,7 @@ describe('Express app integration', () => {
     expect(provider.getProductsByBarcodes).not.toHaveBeenCalled();
   });
 
+  // A valid login alone is not enough to unlock nutrition.
   it('rejects an authenticated user without an active subscription', async () => {
     const client = request.agent(createApp('http://localhost:3000', stripeConfig, authConfig));
     await client.post('/api/auth/login').send({
@@ -139,6 +144,7 @@ describe('Express app integration', () => {
     expect(provider.getProductsByBarcodes).not.toHaveBeenCalled();
   });
 
+  // Active subscribers receive normalized nutrition data from the protected route.
   it('returns nutrition for an authenticated active subscriber', async () => {
     subscription.getDemoUser.mockResolvedValue({
       id: 'user_1',
@@ -162,6 +168,7 @@ describe('Express app integration', () => {
     });
   });
 
+  // Search history is recorded only for authenticated first-page searches.
   it('stores recent searches only for a signed-in first-page request', async () => {
     const app = createApp('http://localhost:3000', stripeConfig, authConfig);
     const client = request.agent(app);
@@ -176,6 +183,7 @@ describe('Express app integration', () => {
     });
   });
 
+  // Deletion must include the owner condition to prevent cross-account access.
   it('deletes one recent search only for its signed-in owner', async () => {
     const client = request.agent(createApp('http://localhost:3000', stripeConfig, authConfig));
     await client.post('/api/auth/login').send({
@@ -191,6 +199,7 @@ describe('Express app integration', () => {
     });
   });
 
+  // Invalid webhook signatures are rejected before any subscription mutation.
   it('rejects a webhook with an invalid Stripe signature', async () => {
     subscription.constructEvent.mockImplementation(() => {
       throw new Error('bad signature');
@@ -205,6 +214,7 @@ describe('Express app integration', () => {
     expect(subscription.processSubscriptionEvent).not.toHaveBeenCalled();
   });
 
+  // Repeated delivery of the same event must be idempotent.
   it('processes each valid Stripe webhook event once', async () => {
     const app = createApp('http://localhost:3000', stripeConfig, authConfig);
     const first = await request(app)

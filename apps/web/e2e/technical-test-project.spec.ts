@@ -1,5 +1,7 @@
+// End-to-end tests cover the user journeys that connect search, login, subscriptions, and UI state.
 import { expect, test, type Page } from '@playwright/test';
 
+// Keep the fixture small and predictable so browser assertions focus on interface behavior.
 const product = {
   barcode: '3017624010701',
   name: 'Nutella',
@@ -90,6 +92,7 @@ async function mockApi(page: Page, status = 'INACTIVE') {
   });
 }
 
+// Extend the public mock with authenticated account and recent-search responses.
 async function mockAuthenticatedSession(page: Page, status = 'INACTIVE') {
   await mockApi(page, status);
   await page.unroute('http://localhost:4000/api/auth/session');
@@ -112,12 +115,14 @@ async function mockAuthenticatedSession(page: Page, status = 'INACTIVE') {
   );
 }
 
+// Navigate through the same login flow a reviewer uses in the browser.
 async function signInWithDemoAccount(page: Page) {
   await page.getByRole('link', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/login$/);
   await completeDemoLogin(page);
 }
 
+// Fill the assignment demo credentials and wait until the landing page is restored.
 async function completeDemoLogin(page: Page) {
   await page.getByRole('button', { name: 'Use demo credentials' }).click();
   await page.locator('form').getByRole('button', { name: 'Sign in' }).click();
@@ -125,12 +130,14 @@ async function completeDemoLogin(page: Page) {
   await expect(page.getByLabel('Search products')).toBeVisible();
 }
 
+// Reuse the primary search journey across tests that need visible products.
 async function searchForNutella(page: Page) {
   await page.getByLabel('Search products').fill('nutella');
   await page.getByRole('button', { name: 'Search products' }).click();
   await expect(page.getByRole('heading', { name: 'Nutella' })).toBeVisible();
 }
 
+// The initial page is empty; entering and clearing a query should reset all result state.
 test('starts empty, searches on demand, and clears when the input becomes blank', async ({
   page,
 }) => {
@@ -163,6 +170,7 @@ test('starts empty, searches on demand, and clears when the input becomes blank'
   await expect(page.getByRole('button', { name: 'Clear search' })).toHaveCount(0);
 });
 
+// The empty landing page should still use the full viewport instead of floating the footer upward.
 test('keeps the footer at the bottom before the first search', async ({ page }) => {
   await mockApi(page);
   await page.setViewportSize({ width: 1280, height: 720 });
@@ -174,6 +182,7 @@ test('keeps the footer at the bottom before the first search', async ({ page }) 
   expect(footerBottom).toBeGreaterThanOrEqual(640);
 });
 
+// The dedicated login route should show Foodex branding and no retired copy.
 test('serves the branded sign-in form at the dedicated login route', async ({ page }) => {
   await mockApi(page);
   await page.goto('/login');
@@ -183,6 +192,7 @@ test('serves the branded sign-in form at the dedicated login route', async ({ pa
   await expect(page.getByText('Better choices start with the label.')).toHaveCount(0);
 });
 
+// An authenticated free-plan user should see the subscription prompt instead of nutrition.
 test('keeps nutrition locked for an inactive demo user', async ({ page }) => {
   await mockApi(page);
   await page.goto('/');
@@ -192,6 +202,7 @@ test('keeps nutrition locked for an inactive demo user', async ({ page }) => {
   await expect(page.getByText('🔒 Subscribe to View Nutrition').first()).toBeVisible();
 });
 
+// Checkout redirects must restore the public search query and visible products.
 test('restores product results after returning from Stripe Checkout', async ({ page }) => {
   await mockAuthenticatedSession(page);
   await page.unroute('http://localhost:4000/api/checkout');
@@ -208,6 +219,7 @@ test('restores product results after returning from Stripe Checkout', async ({ p
   await expect(page.getByLabel('Search products')).toHaveValue('nutella');
 });
 
+// The account callout should create a Checkout request for authenticated users.
 test('starts Stripe Checkout from the monthly subscription callout', async ({ page }) => {
   await mockAuthenticatedSession(page);
   const checkoutRequest = page.waitForRequest('http://localhost:4000/api/checkout');
@@ -216,6 +228,7 @@ test('starts Stripe Checkout from the monthly subscription callout', async ({ pa
   await checkoutRequest;
 });
 
+// Pagination should move between provider pages without changing the active query.
 test('uses simple previous and next controls for search pages', async ({ page }) => {
   await mockApi(page);
   await page.goto('/');
@@ -228,6 +241,7 @@ test('uses simple previous and next controls for search pages', async ({ page })
   await expect(pagination.getByRole('button', { name: 'Next' })).toBeDisabled();
 });
 
+// A public visitor should be routed through login while keeping the current search intact.
 test('prompts a public visitor to sign in before subscribing', async ({ page }) => {
   await mockApi(page);
   let searchRequests = 0;
@@ -248,6 +262,7 @@ test('prompts a public visitor to sign in before subscribing', async ({ page }) 
   expect(searchRequests).toBe(1);
 });
 
+// Authenticated users should see history and be able to remove one or all entries.
 test('hydrates an active session and reuses recent searches', async ({ page }) => {
   await mockAuthenticatedSession(page);
   await page.goto('/');
@@ -263,6 +278,7 @@ test('hydrates an active session and reuses recent searches', async ({ page }) =
   await expect(page.getByRole('navigation', { name: 'Recent searches' })).toHaveCount(0);
 });
 
+// Active subscribers should receive nutrition automatically for visible products.
 test('automatically shows protected nutrition for an active subscription', async ({ page }) => {
   await mockApi(page, 'ACTIVE');
   await page.goto('/');
@@ -273,6 +289,7 @@ test('automatically shows protected nutrition for an active subscription', async
   await expect(page.getByText('6', { exact: true }).first()).toBeVisible();
 });
 
+// The UI should distinguish missing provider data from a temporary request error.
 test('distinguishes unavailable nutrition from a temporary request failure', async ({ page }) => {
   await mockApi(page, 'ACTIVE');
   await page.unroute('http://localhost:4000/api/products/nutrition');
@@ -295,6 +312,7 @@ test('distinguishes unavailable nutrition from a temporary request failure', asy
   await expect(page.getByText('Nutrition could not be loaded right now.')).toHaveCount(0);
 });
 
+// Changing locale should refetch names and update the document language attribute.
 test('refetches localized product data and updates the document language', async ({ page }) => {
   await mockApi(page);
   await page.goto('/');
@@ -310,6 +328,7 @@ test('refetches localized product data and updates the document language', async
   await expect(page.locator('html')).toHaveAttribute('lang', 'nl');
 });
 
+// The clear and submit controls must remain usable without overlap on small screens.
 test('keeps search controls separate on a mobile viewport', async ({ page }) => {
   await mockApi(page);
   await page.setViewportSize({ width: 390, height: 844 });

@@ -23,6 +23,7 @@ export function createApp(
   stripeConfig?: { secretKey: string; priceId: string; webhookSecret: string },
   authConfig?: { email: string; password: string; sessionSecret: string },
 ) {
+  // Build a fresh Express instance so tests can isolate database and provider mocks.
   const app = express();
 
   app.use(cors({ origin: webOrigin, credentials: true }));
@@ -31,6 +32,7 @@ export function createApp(
     '/api/stripe/webhook',
     express.raw({ type: 'application/json' }),
     async (request, response) => {
+      // Verify the raw signed payload and make webhook processing idempotent by event ID.
       if (!stripeConfig) return response.sendStatus(503);
       try {
         const signature = request.headers['stripe-signature'];
@@ -57,6 +59,7 @@ export function createApp(
 
   // Authentication routes implement the assignment's single configured demo identity.
   app.post('/api/auth/login', async (request, response, next) => {
+    // Validate credentials against the configured demo identity before issuing a session cookie.
     if (!authConfig) return response.sendStatus(503);
     const credentials = z
       .object({ email: z.string().email(), password: z.string().min(1).max(200) })
@@ -78,6 +81,7 @@ export function createApp(
   });
 
   app.post('/api/auth/logout', (_request, response) => {
+    // Remove the browser session without exposing any account details.
     clearDemoSession(response);
     response.sendStatus(204);
   });
@@ -89,12 +93,14 @@ export function createApp(
   });
 
   app.get('/api/auth/session', (request, response) => {
+    // Report session state using server-side cookie verification.
     if (!authConfig || !hasValidDemoSession(request, authConfig.email, authConfig.sessionSecret))
       return response.status(401).json({ authenticated: false });
     response.json({ authenticated: true, user: { email: authConfig.email } });
   });
 
   app.get('/health', (_request, response) => {
+    // Provide a lightweight readiness endpoint for local and hosted health checks.
     response.json({ status: 'ok' });
   });
 
@@ -129,6 +135,7 @@ export function createApp(
   });
 
   app.get('/api/subscription', async (request, response, next) => {
+    // Reconcile the stored Stripe subscription before returning the current entitlement.
     if (!authConfig || !hasValidDemoSession(request, authConfig.email, authConfig.sessionSecret))
       return response.status(401).json({ message: 'Sign in to view subscription status.' });
     try {
@@ -148,6 +155,7 @@ export function createApp(
   });
 
   app.get('/api/products/search', async (request, response) => {
+    // Validate the public search query, fetch a provider-ranked page, and optionally save history.
     const result = z
       .object({
         query: z.string().trim().min(2).max(120),
@@ -184,6 +192,7 @@ export function createApp(
   });
 
   app.get('/api/recent-searches', async (request, response, next) => {
+    // Return only the signed-in demo user's distinct recent searches.
     if (!authConfig || !hasValidDemoSession(request, authConfig.email, authConfig.sessionSecret))
       return response.status(401).json({ message: 'Sign in to view recent searches.' });
     try {
@@ -202,6 +211,7 @@ export function createApp(
 
   // Checkout and reconciliation never accept entitlement state from the browser.
   app.post('/api/checkout', async (request, response, next) => {
+    // Start Checkout after server-side authentication and configuration checks.
     if (!stripeConfig)
       return response.status(503).json({ message: 'Subscriptions are not configured.' });
     if (!authConfig || !hasValidDemoSession(request, authConfig.email, authConfig.sessionSecret))
@@ -225,6 +235,7 @@ export function createApp(
   });
 
   app.post('/api/checkout/complete', async (request, response, next) => {
+    // Reconcile a completed Checkout session after the browser returns from Stripe.
     if (!stripeConfig)
       return response.status(503).json({ message: 'Subscriptions are not configured.' });
     if (!authConfig || !hasValidDemoSession(request, authConfig.email, authConfig.sessionSecret))
@@ -252,6 +263,7 @@ export function createApp(
 
   // Nutrition remains a separate protected lookup so public search payloads cannot leak it.
   app.post('/api/products/nutrition', async (request, response, next) => {
+    // Protect nutrition behind the subscription entitlement and return explicit availability states.
     const result = z
       .object({
         barcodes: z
@@ -308,6 +320,7 @@ export function createApp(
       response: express.Response,
       _next: express.NextFunction,
     ) => {
+      // Convert unexpected route failures into a safe response while logging server-side details.
       console.error(error);
       response.status(500).json({ message: 'The service is temporarily unavailable.' });
     },

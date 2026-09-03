@@ -1,8 +1,10 @@
+// Configure browser tests to run against the local Next.js development server.
 import { defineConfig } from '@playwright/test';
 import { config } from 'dotenv';
 
 config({ path: '../../.env' });
 
+// Use the reviewer's installed Chrome executable rather than downloading another browser.
 const executablePath = process.env.PLAYWRIGHT_CHROME_PATH;
 
 if (!executablePath) {
