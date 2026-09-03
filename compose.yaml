@@ -1,0 +1,23 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: technical-test-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: technical_test
+      MYSQL_USER: technical_test
+      MYSQL_PASSWORD: technical_test_password
+      MYSQL_ROOT_PASSWORD: local_root_password
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-plocal_root_password']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  mysql_data:

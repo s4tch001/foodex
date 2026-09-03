@@ -1,0 +1,28 @@
+{
+  "name": "foodex",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Packaged food search with localized Open Food Facts data and Stripe subscription-gated nutrition.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n web,api -c green,blue \"npm run dev --workspace @foodex/web\" \"npm run dev --workspace @foodex/api\"",
+    "build": "npm run build --workspace @foodex/shared && npm run build --workspace @foodex/api && npm run build --workspace @foodex/web",
+    "typecheck": "npm run typecheck --workspace @foodex/shared && npm run typecheck --workspace @foodex/api && npm run typecheck --workspace @foodex/web",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "db:generate": "npm run prisma:generate --workspace @foodex/api",
+    "db:migrate": "npm run prisma:migrate --workspace @foodex/api",
+    "db:seed": "npm run prisma:seed --workspace @foodex/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "prettier": "^3.8.3"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=11.0.0"
+  }
+}

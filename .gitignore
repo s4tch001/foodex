@@ -1,0 +1,27 @@
+# Dependencies and generated build output
+node_modules/
+.next/
+dist/
+coverage/
+playwright-report/
+test-results/
+
+# Environment configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Prisma generated files and local databases
+prisma/*.db
+prisma/*.db-journal
+
+# Logs and local tooling state
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.tsbuildinfo
+mysql-data/
+DESIGN.md
+handoff.md
