@@ -8,7 +8,7 @@ Foodex—short for **food codex**—is a focused full-stack technical assignment
 - Locale-aware Open Food Facts product names with English and source-name fallbacks.
 - Search-first interface powered by Open Food Facts Search-a-licious, with 20 ranked results per page and simple previous/next navigation.
 - Fifteen-minute in-memory search cache, concurrent-request coalescing, one controlled retry, and stale-cache recovery during temporary provider failures.
-- Environment-configured demo login using a signed, HttpOnly session cookie.
+- Dedicated `/login` route for the environment-configured demo account, using a signed, HttpOnly session cookie.
 - Recent searches persisted in MySQL through Prisma.
 - Stripe-hosted monthly subscription Checkout in test mode.
 - Signed, idempotent webhook processing and server-enforced nutrition entitlement.
@@ -105,7 +105,7 @@ Open [http://localhost:3000](http://localhost:3000). The Express API runs at [ht
 
 1. Search by product title, brand, or barcode. Results are fetched only after submission.
 2. Change the language to refetch localized product data as well as translate the interface.
-3. Sign in with the demo credentials shown on the login screen.
+3. Open `/login` and sign in with the demo credentials shown on that screen.
 4. Reuse or clear recent searches stored in MySQL.
 5. Select **Start monthly subscription** or **Subscribe to View Nutrition**.
 6. Complete Stripe test Checkout using card `4242 4242 4242 4242`, any future expiry, any three-digit CVC, and any valid postal code.
@@ -131,7 +131,7 @@ If a stored test customer was deleted in Stripe, the next Checkout attempt creat
 | `POST /api/stripe/webhook`     | Stripe signature       | Persist authoritative subscription changes         |
 | `POST /api/products/nutrition` | Session + subscription | Return protected nutrition for up to 20 products   |
 
-## Architecture and security notes
+## Technical decisions
 
 - Open Food Facts and all Stripe secret-key operations stay behind Express.
 - Public search responses explicitly strip nutrition. The protected nutrition route validates both the signed session and the stored subscription state.
@@ -144,6 +144,18 @@ If a stored test customer was deleted in Stripe, the next Checkout attempt creat
 - The visible demo password is an assignment-only simplification, not a production authentication pattern.
 
 See [`docs/architecture.md`](docs/architecture.md) and [`docs/decisions/`](docs/decisions/) for the detailed decisions.
+
+## Internationalization approach
+
+- A manual selector supports English (`en`), Dutch (`nl`), German (`de`), and French (`fr`) without depending on browser auto-detection.
+- Interface copy is maintained in explicit TypeScript translation tables. The chosen locale is stored in `localStorage` and applied to the document `lang` attribute.
+- Changing the locale reruns the active search so Express can request the matching Open Food Facts product-name fields.
+- Product names fall back in this order: selected language, English, generic/source name. Brands, barcodes, and images are source data and are not machine-translated.
+- Missing product fields use translated fallback labels instead of exposing `undefined`, empty image frames, or upstream implementation details.
+
+## Code documentation
+
+Source comments are written in English and explain logical boundaries, external-service behavior, security decisions, and non-obvious fallbacks. Straightforward syntax is intentionally left uncommented so important reasoning remains easy to find. Exported integration functions use concise JSDoc where their contract is not self-evident.
 
 ## Verification
 
@@ -169,5 +181,6 @@ npm run test:e2e --workspace @foodex/web
 - Product quality and translation completeness depend on Open Food Facts.
 - Search pagination follows Search-a-licious pages. The final page can contain fewer than 20 items.
 - In-memory caches reset when the API process restarts.
+- Interface translations are manually maintained; product descriptions and brand names are not machine-translated.
 - Stripe Checkout is test-mode only.
 - `npm audit --omit=dev` reports a high-severity `deepmerge-ts` advisory through the Prisma CLI toolchain. npm's automatic fix is a breaking Prisma downgrade, so this remains a documented tooling risk pending an upstream-compatible release.

@@ -101,11 +101,6 @@ button:disabled {
   letter-spacing: -0.07em;
   margin: 0 0 30px;
 }
-.auth-intro h1 em {
-  font-family: Newsreader, serif;
-  font-weight: 500;
-  color: #95bfff;
-}
 .auth-intro > p:not(.eyebrow) {
   max-width: 500px;
   color: #c2cbd3;
@@ -242,6 +237,10 @@ button:disabled {
 .skip-link:focus {
   transform: translateY(0);
 }
+.product-app {
+  display: flex;
+  flex-direction: column;
+}
 .product-app header {
   height: 76px;
   border-bottom: 1px solid var(--line);
@@ -255,6 +254,10 @@ button:disabled {
   font-weight: 600;
   text-decoration: none;
   letter-spacing: -0.045em;
+  line-height: 1;
+}
+.site-heading {
+  margin: 0;
   line-height: 1;
 }
 .product-app header > div {
@@ -281,8 +284,10 @@ button:disabled {
   background: transparent;
   color: var(--muted);
   font-size: 12px;
+  text-decoration: none;
 }
 .sign-in-button {
+  display: inline-block;
   border: 1px solid var(--ink);
   color: var(--ink);
   padding: 8px 11px;
@@ -295,24 +300,11 @@ button:disabled {
 .search-hero {
   padding: clamp(34px, 5vw, 60px) 0 32px;
 }
-.search-hero h1 {
-  max-width: 720px;
-  font-size: clamp(38px, 5vw, 60px);
-  letter-spacing: -0.065em;
-  line-height: 0.98;
-  margin: 0 0 14px;
-}
-.search-hero > p:not(.eyebrow) {
-  font-size: 15px;
-  color: var(--muted);
-  line-height: 1.55;
-  max-width: 620px;
-}
 .search-hero form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 44px 152px;
   align-items: center;
-  margin-top: 22px;
+  margin-top: 0;
   border: 1px solid #aab4bd;
   background: white;
   min-height: 52px;
@@ -641,7 +633,7 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  margin-top: 72px;
+  margin-top: auto;
   padding: 22px 0 0;
   border-top: 1px solid var(--line);
   color: var(--muted);
@@ -649,6 +641,9 @@ button:disabled {
     10px 'DM Mono',
     monospace;
   letter-spacing: 0.04em;
+}
+.results + .site-footer {
+  margin-top: 72px;
 }
 @media (max-width: 760px) {
   .auth-intro {
@@ -685,9 +680,6 @@ button:disabled {
   }
   .search-hero {
     padding: 38px 0 28px;
-  }
-  .search-hero h1 {
-    font-size: 40px;
   }
   .search-hero form {
     grid-template-columns: minmax(0, 1fr) 44px;

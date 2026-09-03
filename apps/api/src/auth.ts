@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { Request, Response } from 'express';
 
-const SESSION_NAME = 'technical_test_session';
+const SESSION_NAME = 'foodex_session';
 const MAX_AGE_MS = 8 * 60 * 60 * 1000;
 
 // The demo scope uses a signed cookie payload instead of a server-side session store.
@@ -17,6 +17,7 @@ function readCookie(request: Request, name: string) {
     ?.slice(name.length + 1);
 }
 
+/** Issues the short-lived signed cookie used by the single demo account. */
 export function issueDemoSession(response: Response, email: string, secret: string) {
   const payload = Buffer.from(
     JSON.stringify({ email, expiresAt: Date.now() + MAX_AGE_MS }),
@@ -31,6 +32,7 @@ export function issueDemoSession(response: Response, email: string, secret: stri
   });
 }
 
+/** Clears the demo session using the same security attributes used when it was issued. */
 export function clearDemoSession(response: Response) {
   response.clearCookie(SESSION_NAME, {
     httpOnly: true,
@@ -40,6 +42,7 @@ export function clearDemoSession(response: Response) {
   });
 }
 
+/** Verifies the cookie signature, configured identity, and expiry without trusting client state. */
 export function hasValidDemoSession(request: Request, expectedEmail: string, secret: string) {
   const token = readCookie(request, SESSION_NAME);
   if (!token) return false;

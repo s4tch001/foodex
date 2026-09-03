@@ -17,18 +17,26 @@ const localizedNames = {
 
 async function mockApi(page: Page, status = 'INACTIVE') {
   // Browser tests isolate the interface; app integration tests exercise the real Express routes.
+  let signedIn = false;
   await page.route('http://localhost:4000/api/auth/demo-credentials', (route) =>
     route.fulfill({ json: { email: 'demo@technicaltest.local', password: 'DemoPassword123!' } }),
   );
   await page.route('http://localhost:4000/api/auth/session', (route) =>
-    route.fulfill({ status: 401, json: { authenticated: false } }),
+    route.fulfill({
+      status: signedIn ? 200 : 401,
+      json: signedIn
+        ? { authenticated: true, user: { email: 'demo@technicaltest.local' } }
+        : { authenticated: false },
+    }),
   );
-  await page.route('http://localhost:4000/api/auth/login', (route) =>
-    route.fulfill({ json: { user: { email: 'demo@technicaltest.local' } } }),
-  );
-  await page.route('http://localhost:4000/api/auth/logout', (route) =>
-    route.fulfill({ status: 204 }),
-  );
+  await page.route('http://localhost:4000/api/auth/login', (route) => {
+    signedIn = true;
+    return route.fulfill({ json: { user: { email: 'demo@technicaltest.local' } } });
+  });
+  await page.route('http://localhost:4000/api/auth/logout', (route) => {
+    signedIn = false;
+    return route.fulfill({ status: 204 });
+  });
   await page.route('http://localhost:4000/api/subscription', (route) =>
     route.fulfill({ json: { status } }),
   );
@@ -105,12 +113,12 @@ async function mockAuthenticatedSession(page: Page, status = 'INACTIVE') {
 }
 
 async function signInWithDemoAccount(page: Page) {
-  await page.locator('button.sign-in-button').click();
+  await page.getByRole('link', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/\/login$/);
   await page.getByRole('button', { name: 'Use demo credentials' }).click();
   await page.locator('form').getByRole('button', { name: 'Sign in' }).click();
-  await expect(
-    page.getByRole('heading', { name: 'Better choices start with the label.' }),
-  ).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByLabel('Search products')).toBeVisible();
 }
 
 async function searchForNutella(page: Page) {
@@ -128,6 +136,14 @@ test('starts empty, searches on demand, and clears when the input becomes blank'
     if (request.url().includes('/api/products/search')) searchRequests += 1;
   });
   await page.goto('/');
+  await expect(page.getByText('Better choices start with the label.')).toHaveCount(0);
+  await expect(page.getByText('The food codex', { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByText('Search by product title, brand, or barcode to explore packaged foods.'),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText('Search by product title, brand, or barcode.', { exact: true }),
+  ).toHaveCount(0);
   await expect(page.locator('.product-grid article')).toHaveCount(0);
   expect(searchRequests).toBe(0);
 
@@ -136,6 +152,25 @@ test('starts empty, searches on demand, and clears when the input becomes blank'
   await page.getByLabel('Search products').fill('');
   await expect(page.locator('#results')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Clear search' })).toHaveCount(0);
+});
+
+test('keeps the footer at the bottom before the first search', async ({ page }) => {
+  await mockApi(page);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/');
+
+  const footerBottom = await page
+    .locator('.site-footer')
+    .evaluate((footer) => footer.getBoundingClientRect().bottom);
+  expect(footerBottom).toBeGreaterThanOrEqual(640);
+});
+
+test('serves the branded sign-in form at the dedicated login route', async ({ page }) => {
+  await mockApi(page);
+  await page.goto('/login');
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Foodex' })).toBeVisible();
+  await expect(page.getByText('Better choices start with the label.')).toHaveCount(0);
 });
 
 test('keeps nutrition locked for an inactive demo user', async ({ page }) => {
@@ -184,6 +219,7 @@ test('prompts a public visitor to sign in before subscribing', async ({ page }) 
     .getByRole('button', { name: /Sign in to subscribe and unlock nutrition/ })
     .first()
     .click();
+  await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByText('demo@technicaltest.local')).toBeVisible();
 });
 

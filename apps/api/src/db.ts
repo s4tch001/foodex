@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 
 export const prisma = new PrismaClient();
 
-// The configured demo email must match the user created by the Prisma seed script.
+/** Loads the seeded demo user and entitlement, failing clearly when setup is incomplete. */
 export async function getDemoUser(email: string) {
   const user = await prisma.user.findUnique({
     where: { email },

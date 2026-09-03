@@ -1,5 +1,6 @@
 import type { SubscriptionStatus } from '@prisma/client';
 
+/** Returns whether the stored subscription currently grants nutrition access. */
 export function canAccessNutrition(
   subscription: { status: SubscriptionStatus; currentPeriodEnd: Date | null } | null,
 ): boolean {

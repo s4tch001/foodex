@@ -3,19 +3,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const database = vi.hoisted(() => ({
   updateUser: vi.fn(),
+  upsertSubscription: vi.fn(),
 }));
 
 vi.mock('./db.js', () => ({
   prisma: {
     user: { update: database.updateUser },
+    subscription: { upsert: database.upsertSubscription },
   },
 }));
 
-import { createSubscriptionCheckout } from './stripe.js';
+import { createSubscriptionCheckout, processSubscriptionEvent } from './stripe.js';
 
 describe('createSubscriptionCheckout', () => {
   beforeEach(() => {
     database.updateUser.mockReset();
+    database.upsertSubscription.mockReset();
   });
 
   it('replaces a locally stored customer that was deleted from Stripe', async () => {
@@ -85,5 +88,36 @@ describe('createSubscriptionCheckout', () => {
       }),
     ).rejects.toMatchObject({ param: 'line_items[0][price]' });
     expect(stripe.customers.create).not.toHaveBeenCalled();
+  });
+
+  it('persists the Stripe item period used by the backend entitlement guard', async () => {
+    const currentPeriodEnd = 1_800_000_000;
+    const subscription = {
+      id: 'sub_active',
+      status: 'active',
+      metadata: { userId: 'user_1' },
+      items: { data: [{ current_period_end: currentPeriodEnd }] },
+    } as unknown as Stripe.Subscription;
+
+    await processSubscriptionEvent({
+      type: 'customer.subscription.updated',
+      data: { object: subscription },
+    } as Stripe.Event);
+
+    const expectedPeriodEnd = new Date(currentPeriodEnd * 1_000);
+    expect(database.upsertSubscription).toHaveBeenCalledWith({
+      where: { userId: 'user_1' },
+      update: {
+        stripeSubscriptionId: 'sub_active',
+        status: 'ACTIVE',
+        currentPeriodEnd: expectedPeriodEnd,
+      },
+      create: {
+        userId: 'user_1',
+        stripeSubscriptionId: 'sub_active',
+        status: 'ACTIVE',
+        currentPeriodEnd: expectedPeriodEnd,
+      },
+    });
   });
 });

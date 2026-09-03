@@ -2,6 +2,7 @@ export const supportedLocales = ['en', 'nl', 'de', 'fr'] as const;
 
 export type SupportedLocale = (typeof supportedLocales)[number];
 
+/** Normalized nutrition values per 100 g; omitted fields were unavailable upstream. */
 export interface ProductNutrition {
   energyKcal?: number;
   fat?: number;
@@ -13,6 +14,7 @@ export interface ProductNutrition {
   salt?: number;
 }
 
+/** Stable Foodex product shape shared by the API and web application. */
 export interface ProductSummary {
   barcode: string;
   name: string | null;

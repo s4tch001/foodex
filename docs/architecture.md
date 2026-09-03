@@ -38,7 +38,7 @@ This document describes the implemented application boundaries and the security-
 
 ## Demo Authentication Flow
 
-1. The login form displays the environment-configured demo credentials for this technical test.
+1. The dedicated `/login` route displays the environment-configured demo credentials for this technical test.
 2. The API verifies the submitted values against `DEMO_EMAIL` and `DEMO_PASSWORD` and confirms that the seeded MySQL user exists.
 3. The API issues an eight-hour signed HttpOnly, SameSite=Lax cookie.
 4. Subscription status, recent searches, Checkout creation, and nutrition requests require the valid cookie.
@@ -54,6 +54,7 @@ This document describes the implemented application boundaries and the security-
 ## Frontend Scope
 
 - The landing page is search-first and does not preload a product catalog.
+- Authentication has a dedicated `/login` route; public subscription actions redirect there instead of swapping the landing-page component tree.
 - The manual locale selector updates the interface, the document `lang`, and active search product names.
 - Tailwind utilities provide the main responsive page, header, and result-grid layout. Project-specific CSS supplies the visual theme and component details.
 - Cart and retail pricing are intentionally excluded because Open Food Facts does not provide authoritative commerce data and the assignment asks for discovery plus subscription-gated nutrition.

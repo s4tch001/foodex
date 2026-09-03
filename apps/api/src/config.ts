@@ -14,7 +14,7 @@ const schema = z.object({
 
 export type AppConfig = z.infer<typeof schema>;
 
-// Stop startup early when local configuration is incomplete or malformed.
+/** Stops startup early when required environment configuration is incomplete or malformed. */
 export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppConfig {
   return schema.parse(environment);
 }

@@ -1,29 +1,18 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { supportedLocales, type ProductSummary, type SupportedLocale } from '@foodex/shared';
-
-const api = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+import { apiRequest } from './api-client';
 
 const words = {
   en: {
-    welcome: 'Welcome back',
     login: 'Sign in',
-    signingIn: 'Signing in...',
-    title: 'Better choices start with the label.',
-    intro: 'A clearer way to shop your everyday favourites.',
-    introText:
-      'Explore packaged foods, understand the essentials, and unlock the full nutrition story when you are ready.',
-    email: 'Email address',
-    password: 'Password',
-    demo: 'Demo account',
-    useDemo: 'Use demo credentials',
     search: 'Search products',
     searching: 'Searching...',
     placeholder: 'Search by product title or brand',
     signOut: 'Sign out',
-    productDatabase: 'The food codex',
     results: 'Products to explore',
     items: 'items',
     noBrand: 'Brand unavailable',
@@ -41,23 +30,17 @@ const words = {
     loadingNutrition: 'Loading nutrition...',
     recent: 'Recent searches',
     clearRecent: 'Clear recent searches',
-    backToProducts: 'Back to products',
     previous: 'Previous',
     next: 'Next',
-    loginError: 'Unable to sign in with those credentials.',
     enterQuery: 'Enter at least two characters to search.',
     noMatches: 'No products matched that search.',
     searchError: 'Product search is unavailable right now.',
     checkoutError: 'Subscription checkout is unavailable right now.',
     nutritionError: 'Nutrition details are unavailable for this product.',
     nutritionLoadError: 'Nutrition could not be loaded right now. Please try again shortly.',
-    searchHint: 'Search by product title, brand, or barcode.',
     language: 'Language',
-    productSource: 'Open Food Facts search',
-    paymentMode: 'Foodex Premium access',
     signInToUnlock: 'Sign in to subscribe and unlock nutrition',
     loadingSession: 'Loading your workspace...',
-    browseProducts: 'Search by product title, brand, or barcode to explore packaged foods.',
     skipResults: 'Skip to search results',
     nutritionLabels: {
       energyKcal: 'Energy',
@@ -71,22 +54,11 @@ const words = {
     },
   },
   nl: {
-    welcome: 'Welkom terug',
     login: 'Inloggen',
-    signingIn: 'Inloggen...',
-    title: 'Betere keuzes beginnen bij het etiket.',
-    intro: 'Een helderdere manier om je dagelijkse favorieten te kiezen.',
-    introText:
-      'Zoek verpakte voedingsproducten op een plek. Basisgegevens zijn openbaar; een actief abonnement ontgrendelt voeding.',
-    email: 'E-mailadres',
-    password: 'Wachtwoord',
-    demo: 'Demoaccount',
-    useDemo: 'Gebruik demo-inloggegevens',
     search: 'Producten zoeken',
     searching: 'Zoeken...',
     placeholder: 'Zoek op producttitel of merk',
     signOut: 'Uitloggen',
-    productDatabase: 'De voedselcodex',
     results: 'Producten om te ontdekken',
     items: 'items',
     noBrand: 'Merk niet beschikbaar',
@@ -104,23 +76,17 @@ const words = {
     loadingNutrition: 'Voeding laden...',
     recent: 'Recente zoekopdrachten',
     clearRecent: 'Recente zoekopdrachten wissen',
-    backToProducts: 'Terug naar producten',
     previous: 'Vorige',
     next: 'Volgende',
-    loginError: 'Inloggen met deze gegevens is niet gelukt.',
     enterQuery: 'Voer minstens twee tekens in om te zoeken.',
     noMatches: 'Geen producten gevonden voor deze zoekopdracht.',
     searchError: 'Product zoeken is momenteel niet beschikbaar.',
     checkoutError: 'Abonnement afrekenen is momenteel niet beschikbaar.',
     nutritionError: 'Voedingsdetails zijn niet beschikbaar voor dit product.',
     nutritionLoadError: 'Voedingsdetails konden niet worden geladen. Probeer het zo opnieuw.',
-    searchHint: 'Zoek op producttitel, merk of barcode.',
     language: 'Taal',
-    productSource: 'Zoeken in Open Food Facts',
-    paymentMode: 'Foodex Premium-toegang',
     signInToUnlock: 'Log in om je te abonneren en voeding te ontgrendelen',
     loadingSession: 'Werkruimte laden...',
-    browseProducts: 'Zoek op producttitel, merk of barcode om verpakte voeding te ontdekken.',
     skipResults: 'Ga naar zoekresultaten',
     nutritionLabels: {
       energyKcal: 'Energie',
@@ -134,22 +100,11 @@ const words = {
     },
   },
   de: {
-    welcome: 'Willkommen zurück',
     login: 'Anmelden',
-    signingIn: 'Anmeldung...',
-    title: 'Bessere Entscheidungen beginnen mit dem Etikett.',
-    intro: 'Eine klarere Art, alltägliche Favoriten auszuwählen.',
-    introText:
-      'Suche verpackte Lebensmittel an einem Ort. Grunddaten sind öffentlich; ein aktives Abo schaltet Nährwerte frei.',
-    email: 'E-Mail-Adresse',
-    password: 'Passwort',
-    demo: 'Demokonto',
-    useDemo: 'Demo-Zugangsdaten verwenden',
     search: 'Produkte suchen',
     searching: 'Suche läuft...',
     placeholder: 'Nach Produkttitel oder Marke suchen',
     signOut: 'Abmelden',
-    productDatabase: 'Der Lebensmittelkodex',
     results: 'Produkte zum Entdecken',
     items: 'Einträge',
     noBrand: 'Marke nicht verfügbar',
@@ -167,10 +122,8 @@ const words = {
     loadingNutrition: 'Nährwerte werden geladen...',
     recent: 'Letzte Suchen',
     clearRecent: 'Letzte Suchen löschen',
-    backToProducts: 'Zurück zu den Produkten',
     previous: 'Zurück',
     next: 'Weiter',
-    loginError: 'Anmeldung mit diesen Zugangsdaten nicht möglich.',
     enterQuery: 'Gib mindestens zwei Zeichen für die Suche ein.',
     noMatches: 'Keine Produkte für diese Suche gefunden.',
     searchError: 'Die Produktsuche ist derzeit nicht verfügbar.',
@@ -178,13 +131,9 @@ const words = {
     nutritionError: 'Nährwertdetails sind für dieses Produkt nicht verfügbar.',
     nutritionLoadError:
       'Die Nährwertdetails konnten nicht geladen werden. Bitte versuche es gleich erneut.',
-    searchHint: 'Suche nach Produkttitel, Marke oder Barcode.',
     language: 'Sprache',
-    productSource: 'Open Food Facts-Suche',
-    paymentMode: 'Foodex Premium-Zugang',
     signInToUnlock: 'Anmelden, abonnieren und Nährwerte freischalten',
     loadingSession: 'Arbeitsbereich wird geladen...',
-    browseProducts: 'Suche nach Produkttitel, Marke oder Barcode, um Lebensmittel zu entdecken.',
     skipResults: 'Zu den Suchergebnissen springen',
     nutritionLabels: {
       energyKcal: 'Energie',
@@ -198,22 +147,11 @@ const words = {
     },
   },
   fr: {
-    welcome: 'Bon retour',
     login: 'Se connecter',
-    signingIn: 'Connexion...',
-    title: 'De meilleurs choix commencent par l’étiquette.',
-    intro: 'Une façon plus claire de choisir vos favoris du quotidien.',
-    introText:
-      'Recherchez des produits alimentaires emballés au même endroit. Les données de base sont publiques; un abonnement actif débloque la nutrition.',
-    email: 'Adresse e-mail',
-    password: 'Mot de passe',
-    demo: 'Compte démo',
-    useDemo: 'Utiliser les identifiants de démonstration',
     search: 'Rechercher des produits',
     searching: 'Recherche...',
     placeholder: 'Rechercher par titre ou marque',
     signOut: 'Se déconnecter',
-    productDatabase: 'Le codex alimentaire',
     results: 'Produits à découvrir',
     items: 'articles',
     noBrand: 'Marque indisponible',
@@ -231,10 +169,8 @@ const words = {
     loadingNutrition: 'Chargement de la nutrition...',
     recent: 'Recherches récentes',
     clearRecent: 'Effacer les recherches',
-    backToProducts: 'Retour aux produits',
     previous: 'Précédent',
     next: 'Suivant',
-    loginError: 'Connexion impossible avec ces identifiants.',
     enterQuery: 'Saisissez au moins deux caractères pour rechercher.',
     noMatches: 'Aucun produit ne correspond à cette recherche.',
     searchError: 'La recherche de produits est indisponible pour le moment.',
@@ -242,14 +178,9 @@ const words = {
     nutritionError: 'Les détails nutritionnels ne sont pas disponibles pour ce produit.',
     nutritionLoadError:
       'Les détails nutritionnels n’ont pas pu être chargés. Réessayez dans un instant.',
-    searchHint: 'Recherchez par titre, marque ou code-barres.',
     language: 'Langue',
-    productSource: 'Recherche Open Food Facts',
-    paymentMode: 'Accès Foodex Premium',
     signInToUnlock: 'Connectez-vous pour vous abonner et débloquer la nutrition',
     loadingSession: 'Chargement de votre espace...',
-    browseProducts:
-      'Recherchez par titre, marque ou code-barres pour découvrir des produits emballés.',
     skipResults: 'Aller aux résultats de recherche',
     nutritionLabels: {
       energyKcal: 'Énergie',
@@ -264,7 +195,7 @@ const words = {
   },
 } as const;
 
-type NoticeKey = 'loginError' | 'enterQuery' | 'noMatches' | 'searchError' | 'checkoutError' | null;
+type NoticeKey = 'enterQuery' | 'noMatches' | 'searchError' | 'checkoutError' | null;
 type RecentSearch = { id: string; query: string };
 type NutritionStatus = 'loading' | 'unavailable' | 'error';
 type NutritionResult =
@@ -278,27 +209,14 @@ type ProductPagination = {
   hasPrevious: boolean;
 };
 
-function request(path: string, init?: RequestInit) {
-  // Include the HttpOnly demo-session cookie for protected API requests.
-  return fetch(`${api}${path}`, {
-    ...init,
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
-  });
-}
-
 export default function HomePage() {
+  // Locale, session, and entitlement state control which interface and product data are visible.
   const [locale, setLocale] = useState<SupportedLocale>('en');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [demoCredentials, setDemoCredentials] = useState<{
-    email: string;
-    password: string;
-  } | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
   const [subscriptionActive, setSubscriptionActive] = useState(false);
+
+  // Search state is intentionally empty on first load; products appear only after a submitted query.
   const [query, setQuery] = useState('');
   const [products, setProducts] = useState<PublicProductSummary[]>([]);
   const [activeSearch, setActiveSearch] = useState<string | null>(null);
@@ -325,7 +243,7 @@ export default function HomePage() {
   }
   async function loadRecentSearches() {
     try {
-      const response = await request('/api/recent-searches');
+      const response = await apiRequest('/api/recent-searches');
       if (!response.ok) return;
       const data = (await response.json()) as { searches: RecentSearch[] };
       setRecentSearches(data.searches);
@@ -344,16 +262,8 @@ export default function HomePage() {
     document.documentElement.lang = nextLocale;
   }, []);
   useEffect(() => {
-    request('/api/auth/demo-credentials')
-      .then((response) => (response.ok ? response.json() : null))
-      .then((credentials: { email: string; password: string } | null) =>
-        setDemoCredentials(credentials),
-      )
-      .catch(() => setDemoCredentials(null));
-  }, []);
-  useEffect(() => {
     // Render after session hydration to prevent a signed-in user seeing a login flash on refresh.
-    request('/api/auth/session')
+    apiRequest('/api/auth/session')
       .then((response) => response.json())
       .then((data: { authenticated?: boolean }) => setAuthenticated(Boolean(data.authenticated)))
       .catch(() => setAuthenticated(false))
@@ -373,12 +283,12 @@ export default function HomePage() {
     const refreshSubscription = async () => {
       try {
         if (checkoutReturned) {
-          await request('/api/checkout/complete', {
+          await apiRequest('/api/checkout/complete', {
             method: 'POST',
             body: JSON.stringify({ sessionId: checkoutParams.get('session_id') ?? undefined }),
           });
         }
-        const response = await request('/api/subscription');
+        const response = await apiRequest('/api/subscription');
         const data = (await response.json()) as { status?: string };
         const active = ['ACTIVE', 'TRIALING'].includes(data.status ?? '');
         setSubscriptionActive(active);
@@ -398,27 +308,8 @@ export default function HomePage() {
     };
   }, [authenticated]);
 
-  async function login(event: React.FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setNotice(null);
-    try {
-      const response = await request('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      });
-      if (!response.ok) throw new Error();
-      setAuthenticated(true);
-      setLoginOpen(false);
-      setNotice(null);
-    } catch {
-      setNotice('loginError');
-    } finally {
-      setBusy(false);
-    }
-  }
   async function logout() {
-    await request('/api/auth/logout', { method: 'POST' });
+    await apiRequest('/api/auth/logout', { method: 'POST' });
     setAuthenticated(false);
     setSubscriptionActive(false);
     setNutritionByBarcode({});
@@ -434,6 +325,7 @@ export default function HomePage() {
     page = 1,
     requestedLocale: SupportedLocale = locale,
   ) {
+    // Cancel the previous query so slower responses cannot replace newer search results.
     if (searchQuery.trim().length < 2) return setNotice('enterQuery');
     searchController.current?.abort();
     const controller = new AbortController();
@@ -441,7 +333,7 @@ export default function HomePage() {
     setBusy(true);
     setNotice(null);
     try {
-      const response = await request(
+      const response = await apiRequest(
         `/api/products/search?query=${encodeURIComponent(searchQuery)}&locale=${requestedLocale}&page=${page}`,
         { signal: controller.signal },
       );
@@ -488,12 +380,12 @@ export default function HomePage() {
   async function checkout() {
     if (busy) return;
     if (!authenticated) {
-      setLoginOpen(true);
+      window.location.assign('/login');
       return;
     }
     setBusy(true);
     try {
-      const response = await request('/api/checkout', { method: 'POST' });
+      const response = await apiRequest('/api/checkout', { method: 'POST' });
       const data = (await response.json()) as { url?: string };
       if (!response.ok || !data.url) throw new Error();
       window.location.assign(data.url);
@@ -504,7 +396,7 @@ export default function HomePage() {
   }
   async function clearRecentSearches() {
     try {
-      const response = await request('/api/recent-searches', { method: 'DELETE' });
+      const response = await apiRequest('/api/recent-searches', { method: 'DELETE' });
       if (!response.ok) throw new Error();
       setRecentSearches([]);
     } catch {
@@ -513,7 +405,7 @@ export default function HomePage() {
   }
   function selectProduct() {
     if (!authenticated) {
-      setLoginOpen(true);
+      window.location.assign('/login');
       return;
     }
     void checkout();
@@ -546,7 +438,7 @@ export default function HomePage() {
 
     const loadVisibleNutrition = async () => {
       try {
-        const response = await request('/api/products/nutrition', {
+        const response = await apiRequest('/api/products/nutrition', {
           method: 'POST',
           body: JSON.stringify({ barcodes, locale }),
           signal: controller.signal,
@@ -599,98 +491,17 @@ export default function HomePage() {
       </main>
     );
 
-  if (loginOpen && !authenticated)
-    return (
-      <main className="auth-page grid min-h-screen lg:grid-cols-[1.15fr_0.85fr]">
-        <section className="auth-intro">
-          <p className="eyebrow">TECHNICAL TEST PROJECT OF PAU</p>
-          <h1>{text.title}</h1>
-          <p>{text.introText}</p>
-          <div className="intro-grid">
-            <span>{text.productSource}</span>
-            <span>{text.paymentMode}</span>
-            <span>EN / NL / DE / FR</span>
-          </div>
-        </section>
-        <section className="login-shell">
-          <div className="language-row">
-            <button className="text-button" type="button" onClick={() => setLoginOpen(false)}>
-              {text.backToProducts}
-            </button>
-            <span>{text.welcome}</span>
-            <select
-              aria-label={text.language}
-              value={locale}
-              onChange={(event) => changeLocale(event.target.value as SupportedLocale)}
-            >
-              {supportedLocales.map((code) => (
-                <option key={code} value={code}>
-                  {code.toUpperCase()}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="login-card">
-            <p className="eyebrow">{text.login}</p>
-            <h2>{text.intro}</h2>
-            <form onSubmit={login}>
-              <label>
-                {text.email}
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                {text.password}
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                />
-              </label>
-              <button disabled={busy} type="submit">
-                {busy ? text.signingIn : text.login} <b>→</b>
-              </button>
-            </form>
-            {demoCredentials && (
-              <div className="demo-box">
-                <div>
-                  <small>{text.demo}</small>
-                  <strong>{demoCredentials.email}</strong>
-                  <code>{demoCredentials.password}</code>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail(demoCredentials.email);
-                    setPassword(demoCredentials.password);
-                  }}
-                >
-                  {text.useDemo}
-                </button>
-              </div>
-            )}
-            <p className="notice" aria-live="polite">
-              {notice ? text[notice] : ''}
-            </p>
-          </div>
-        </section>
-      </main>
-    );
-
   return (
     <main className="product-app mx-auto min-h-screen w-full max-w-6xl px-4 pb-16 md:px-7">
       <a className="skip-link" href="#results">
         {text.skipResults}
       </a>
       <header className="flex items-center justify-between gap-3">
-        <a className="project-title" href="#top">
-          Foodex
-        </a>
+        <h1 className="site-heading">
+          <a className="project-title" href="#top">
+            Foodex
+          </a>
+        </h1>
         <div>
           {authenticated && (
             <span className={subscriptionActive ? 'access active' : 'access'}>
@@ -713,16 +524,13 @@ export default function HomePage() {
               {text.signOut}
             </button>
           ) : (
-            <button className="text-button sign-in-button" onClick={() => setLoginOpen(true)}>
+            <Link className="text-button sign-in-button" href="/login">
               {text.login}
-            </button>
+            </Link>
           )}
         </div>
       </header>
       <section id="top" className="search-hero w-full max-w-3xl">
-        <p className="eyebrow">{text.productDatabase}</p>
-        <h1>{text.title}</h1>
-        <p>{text.browseProducts}</p>
         <form onSubmit={search}>
           <input
             aria-label={text.search}
@@ -744,9 +552,11 @@ export default function HomePage() {
             {busy ? text.searching : text.search}
           </button>
         </form>
-        <p className="notice" aria-live="polite">
-          {notice ? text[notice] : text.searchHint}
-        </p>
+        {notice && (
+          <p className="notice" aria-live="polite">
+            {text[notice]}
+          </p>
+        )}
       </section>
       {authenticated && recentSearches.length > 0 && (
         <section className="recent-searches">

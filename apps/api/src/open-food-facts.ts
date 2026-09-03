@@ -17,10 +17,13 @@ const REQUEST_HEADERS = {
 };
 
 type PublicProductSummary = Omit<ProductSummary, 'nutrition'>;
+
+/** Products loaded for protected nutrition plus barcodes whose provider request failed. */
 export interface ProductBatchResult {
   products: ProductSummary[];
   failedBarcodes: string[];
 }
+/** One provider-ranked search page and the navigation state exposed to the browser. */
 export interface ProductSearchPage {
   products: ProductSummary[];
   pagination: {
@@ -30,6 +33,7 @@ export interface ProductSearchPage {
   };
 }
 
+// Bounded process-local caches reduce provider traffic without pretending Foodex owns the dataset.
 const productCache = new Map<string, ProductSummary | null>();
 const productFailures = new Map<string, number>();
 const productRequests = new Map<string, Promise<ProductBatchResult>>();
@@ -38,6 +42,7 @@ const pageCache = new Map<
   { expiresAt: number; staleUntil: number; page: ProductSearchPage }
 >();
 const pageRequests = new Map<string, Promise<ProductSearchPage>>();
+// Legacy nutrition searches are serialized to stay below Open Food Facts' documented limit.
 let nextSearchRequestAt = 0;
 let searchRequestQueue = Promise.resolve();
 
@@ -125,6 +130,7 @@ function mapNutrition(nutriments: Record<string, unknown> | undefined): ProductN
   };
 }
 
+/** Normalizes an Open Food Facts record into Foodex's stable product contract. */
 export function mapProduct(product: OpenFoodFactsProduct, locale: SupportedLocale): ProductSummary {
   const brand = Array.isArray(product.brands) ? product.brands.join(', ') : product.brands;
   return {
@@ -232,11 +238,13 @@ function mapSearchPage(
   };
 }
 
+/** Removes protected nutrition before a product is returned from a public search route. */
 export function toPublicProduct(product: ProductSummary): PublicProductSummary {
   const { nutrition: _nutrition, ...publicProduct } = product;
   return publicProduct;
 }
 
+/** Searches a cached, locale-aware, 20-result Open Food Facts page. */
 export async function searchProducts(
   query: string,
   locale: SupportedLocale,
@@ -360,6 +368,7 @@ async function loadProductsByBarcodes(
   };
 }
 
+/** Loads unique barcodes through cached and rate-paced Open Food Facts lookups. */
 export function getProductsByBarcodes(
   barcodes: string[],
   locale: SupportedLocale,

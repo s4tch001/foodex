@@ -22,11 +22,13 @@
 | Locale-aware product data         | Backend maps requested locale, English, then original product name   |
 | Public product name, brand, image | Public search DTO omits nutrition                                    |
 | Subscriber-only nutrition         | Signed demo session plus server-side stored entitlement guard        |
-| One demo user                     | Environment-configured email, seeded MySQL identity and subscription |
+| One demo user                     | `/login`, environment-configured credentials, and seeded MySQL user  |
 | Recent searches in MySQL          | `RecentSearch` Prisma model and protected retrieval route            |
 | Monthly Stripe Checkout           | Server-side Checkout Session with configured recurring Price ID      |
 | Stripe webhooks                   | Raw-body signature verification and event ID idempotency model       |
 | Secrets in environment variables  | `.env.example`, ignored `.env`, configuration validation             |
+
+The automated suite currently contains 21 API unit/integration tests and 13 Playwright browser tests. A real MySQL migration and Stripe test-mode Checkout/webhook walkthrough remain manual acceptance checks because the automated tests use isolated provider and persistence doubles.
 
 ## Final Commands
 

@@ -15,6 +15,9 @@ import {
 import { canAccessNutrition } from './entitlement.js';
 import { clearDemoSession, hasValidDemoSession, issueDemoSession } from './auth.js';
 
+/**
+ * Builds the Express API with public catalog routes and backend-enforced account entitlements.
+ */
 export function createApp(
   webOrigin: string,
   stripeConfig?: { secretKey: string; priceId: string; webhookSecret: string },
@@ -52,6 +55,7 @@ export function createApp(
   );
   app.use(express.json());
 
+  // Authentication routes implement the assignment's single configured demo identity.
   app.post('/api/auth/login', async (request, response, next) => {
     if (!authConfig) return response.sendStatus(503);
     const credentials = z
@@ -94,6 +98,7 @@ export function createApp(
     response.json({ status: 'ok' });
   });
 
+  // Account routes keep recent searches and subscription state behind the signed session.
   app.delete('/api/recent-searches', async (request, response, next) => {
     if (!authConfig || !hasValidDemoSession(request, authConfig.email, authConfig.sessionSecret))
       return response.status(401).json({ message: 'Sign in to clear recent searches.' });
@@ -178,6 +183,7 @@ export function createApp(
     }
   });
 
+  // Checkout and reconciliation never accept entitlement state from the browser.
   app.post('/api/checkout', async (request, response, next) => {
     if (!stripeConfig)
       return response.status(503).json({ message: 'Subscriptions are not configured.' });
@@ -227,6 +233,7 @@ export function createApp(
     }
   });
 
+  // Nutrition remains a separate protected lookup so public search payloads cannot leak it.
   app.post('/api/products/nutrition', async (request, response, next) => {
     const result = z
       .object({

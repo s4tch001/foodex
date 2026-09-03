@@ -1,6 +1,7 @@
 import Stripe from 'stripe';
 import { prisma } from './db.js';
 
+/** Creates the server-only Stripe client from a validated secret key. */
 export function createStripe(secretKey: string) {
   return new Stripe(secretKey);
 }
@@ -30,6 +31,7 @@ function isMissingStripeResource(error: unknown, parameter: string) {
   );
 }
 
+/** Creates a monthly Checkout Session and repairs a deleted test customer once when needed. */
 export async function createSubscriptionCheckout(input: {
   stripe: Stripe;
   userId: string;
@@ -87,20 +89,28 @@ async function persistSubscription(subscription: Stripe.Subscription, userId: st
     incomplete_expired: 'INACTIVE',
     paused: 'INACTIVE',
   };
+  // Stripe's current API stores billing-period boundaries on subscription items.
+  const periodEnds = subscription.items.data
+    .map((item) => item.current_period_end)
+    .filter((value) => Number.isFinite(value));
+  const currentPeriodEnd = periodEnds.length ? new Date(Math.max(...periodEnds) * 1_000) : null;
   await prisma.subscription.upsert({
     where: { userId },
     update: {
       stripeSubscriptionId: subscription.id,
       status: statuses[subscription.status],
+      currentPeriodEnd,
     },
     create: {
       userId,
       stripeSubscriptionId: subscription.id,
       status: statuses[subscription.status],
+      currentPeriodEnd,
     },
   });
 }
 
+/** Reconciles a completed, customer-owned Checkout Session after the Stripe redirect. */
 export async function syncCompletedCheckout(input: {
   stripe: Stripe;
   userId: string;
@@ -138,6 +148,7 @@ export async function syncCompletedCheckout(input: {
   return subscription;
 }
 
+/** Refreshes the locally stored entitlement from its known Stripe subscription. */
 export async function syncStoredSubscription(input: {
   stripe: Stripe;
   userId: string;
@@ -160,6 +171,7 @@ export async function syncStoredSubscription(input: {
   }
 }
 
+/** Applies supported Stripe subscription events to the backend authorization record. */
 export async function processSubscriptionEvent(event: Stripe.Event) {
   // Only Stripe subscription events can update the nutrition entitlement.
   if (!event.type.startsWith('customer.subscription.')) return;
