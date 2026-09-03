@@ -58,4 +58,3 @@ This document describes the implemented application boundaries and the security-
 - Before login or Stripe navigation, the browser stores a one-time snapshot containing only the current public search page. Returning to the landing route restores the same query, locale, pagination, and products without another provider request; protected nutrition is never stored in that snapshot.
 - The manual locale selector updates the interface, the document `lang`, and active search product names.
 - Tailwind utilities provide the main responsive page, header, and result-grid layout. Project-specific CSS supplies the visual theme and component details.
-- Cart and retail pricing are intentionally excluded because Open Food Facts does not provide authoritative commerce data and the assignment asks for discovery plus subscription-gated nutrition.
