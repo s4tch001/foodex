@@ -208,6 +208,37 @@ type ProductPagination = {
   hasNext: boolean;
   hasPrevious: boolean;
 };
+type SearchReturnSnapshot = {
+  query: string;
+  page: number;
+  hasNext: boolean;
+  locale: SupportedLocale;
+  products: PublicProductSummary[];
+};
+
+const searchReturnKey = 'foodex-search-return';
+
+function isSearchReturnSnapshot(value: unknown): value is SearchReturnSnapshot {
+  if (!value || typeof value !== 'object') return false;
+  const snapshot = value as Partial<SearchReturnSnapshot>;
+  return (
+    typeof snapshot.query === 'string' &&
+    typeof snapshot.page === 'number' &&
+    snapshot.page > 0 &&
+    typeof snapshot.hasNext === 'boolean' &&
+    supportedLocales.includes(snapshot.locale as SupportedLocale) &&
+    Array.isArray(snapshot.products) &&
+    snapshot.products.every(
+      (product) =>
+        product &&
+        typeof product === 'object' &&
+        typeof product.barcode === 'string' &&
+        (typeof product.name === 'string' || product.name === null) &&
+        (typeof product.brand === 'string' || product.brand === null) &&
+        (typeof product.imageUrl === 'string' || product.imageUrl === null),
+    )
+  );
+}
 
 export default function HomePage() {
   // Locale, session, and entitlement state control which interface and product data are visible.
@@ -260,6 +291,26 @@ export default function HomePage() {
         : 'en';
     setLocale(nextLocale);
     document.documentElement.lang = nextLocale;
+  }, []);
+  useEffect(() => {
+    // Restore one pending result page after login or Stripe returns to the landing route.
+    const serializedSnapshot = sessionStorage.getItem(searchReturnKey);
+    if (!serializedSnapshot) return;
+    sessionStorage.removeItem(searchReturnKey);
+    try {
+      const snapshot = JSON.parse(serializedSnapshot) as unknown;
+      if (!isSearchReturnSnapshot(snapshot)) return;
+      setLocale(snapshot.locale);
+      document.documentElement.lang = snapshot.locale;
+      localStorage.setItem('foodex-locale', snapshot.locale);
+      setQuery(snapshot.query);
+      setProducts(snapshot.products);
+      setActiveSearch(snapshot.query);
+      setSearchPage(snapshot.page);
+      setSearchHasNext(snapshot.hasNext);
+    } catch {
+      // Ignore malformed browser state and keep the normal clean landing page.
+    }
   }, []);
   useEffect(() => {
     // Render after session hydration to prevent a signed-in user seeing a login flash on refresh.
@@ -377,9 +428,21 @@ export default function HomePage() {
     }
     setQuery(value);
   }
+  function preserveSearchForReturn() {
+    if (!activeSearch || !products.length) return;
+    const snapshot: SearchReturnSnapshot = {
+      query: activeSearch,
+      page: searchPage,
+      hasNext: searchHasNext,
+      locale,
+      products,
+    };
+    sessionStorage.setItem(searchReturnKey, JSON.stringify(snapshot));
+  }
   async function checkout() {
     if (busy) return;
     if (!authenticated) {
+      preserveSearchForReturn();
       window.location.assign('/login');
       return;
     }
@@ -388,6 +451,7 @@ export default function HomePage() {
       const response = await apiRequest('/api/checkout', { method: 'POST' });
       const data = (await response.json()) as { url?: string };
       if (!response.ok || !data.url) throw new Error();
+      preserveSearchForReturn();
       window.location.assign(data.url);
     } catch {
       setNotice('checkoutError');
@@ -405,6 +469,7 @@ export default function HomePage() {
   }
   function selectProduct() {
     if (!authenticated) {
+      preserveSearchForReturn();
       window.location.assign('/login');
       return;
     }
@@ -524,7 +589,11 @@ export default function HomePage() {
               {text.signOut}
             </button>
           ) : (
-            <Link className="text-button sign-in-button" href="/login">
+            <Link
+              className="text-button sign-in-button"
+              href="/login"
+              onClick={preserveSearchForReturn}
+            >
               {text.login}
             </Link>
           )}

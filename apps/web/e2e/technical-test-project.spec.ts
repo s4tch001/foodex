@@ -115,6 +115,10 @@ async function mockAuthenticatedSession(page: Page, status = 'INACTIVE') {
 async function signInWithDemoAccount(page: Page) {
   await page.getByRole('link', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/login$/);
+  await completeDemoLogin(page);
+}
+
+async function completeDemoLogin(page: Page) {
   await page.getByRole('button', { name: 'Use demo credentials' }).click();
   await page.locator('form').getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/$/);
@@ -182,13 +186,20 @@ test('keeps nutrition locked for an inactive demo user', async ({ page }) => {
   await expect(page.getByText('🔒 Subscribe to View Nutrition').first()).toBeVisible();
 });
 
-test('starts Stripe Checkout from a Free Plan product', async ({ page }) => {
+test('restores product results after returning from Stripe Checkout', async ({ page }) => {
   await mockAuthenticatedSession(page);
+  await page.unroute('http://localhost:4000/api/checkout');
+  await page.route('http://localhost:4000/api/checkout', (route) =>
+    route.fulfill({ json: { url: 'http://localhost:3000/?checkout=success' } }),
+  );
   const checkoutRequest = page.waitForRequest('http://localhost:4000/api/checkout');
   await page.goto('/');
   await searchForNutella(page);
   await page.getByRole('button', { name: '🔒 Subscribe to View Nutrition' }).first().click();
   await checkoutRequest;
+  await expect(page).toHaveURL(/\?checkout=success$/);
+  await expect(page.getByRole('heading', { name: 'Nutella' })).toBeVisible();
+  await expect(page.getByLabel('Search products')).toHaveValue('nutella');
 });
 
 test('starts Stripe Checkout from the monthly subscription callout', async ({ page }) => {
@@ -213,6 +224,10 @@ test('uses simple previous and next controls for search pages', async ({ page })
 
 test('prompts a public visitor to sign in before subscribing', async ({ page }) => {
   await mockApi(page);
+  let searchRequests = 0;
+  page.on('request', (request) => {
+    if (request.url().includes('/api/products/search')) searchRequests += 1;
+  });
   await page.goto('/');
   await searchForNutella(page);
   await page
@@ -221,6 +236,10 @@ test('prompts a public visitor to sign in before subscribing', async ({ page }) 
     .click();
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByText('demo@technicaltest.local')).toBeVisible();
+  await completeDemoLogin(page);
+  await expect(page.getByRole('heading', { name: 'Nutella' })).toBeVisible();
+  await expect(page.getByLabel('Search products')).toHaveValue('nutella');
+  expect(searchRequests).toBe(1);
 });
 
 test('hydrates an active session and reuses recent searches', async ({ page }) => {
