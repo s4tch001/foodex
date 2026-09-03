@@ -101,6 +101,20 @@ button:disabled {
   letter-spacing: -0.07em;
   margin: 0 0 30px;
 }
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 2vw, 24px);
+  margin: 0 0 30px;
+}
+.auth-brand img {
+  width: clamp(76px, 8vw, 112px);
+  height: auto;
+  flex: 0 0 auto;
+}
+.auth-intro .auth-brand h1 {
+  margin: 0;
+}
 .auth-intro > p:not(.eyebrow) {
   max-width: 500px;
   color: #c2cbd3;
@@ -248,6 +262,9 @@ button:disabled {
   backdrop-filter: blur(14px);
 }
 .project-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
   color: var(--ink);
   font-family: Newsreader, Georgia, serif;
   font-size: 23px;
@@ -255,6 +272,10 @@ button:disabled {
   text-decoration: none;
   letter-spacing: -0.045em;
   line-height: 1;
+}
+.project-logo {
+  width: 30px;
+  height: 30px;
 }
 .site-heading {
   margin: 0;

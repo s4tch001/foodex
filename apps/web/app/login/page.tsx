@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { supportedLocales, type SupportedLocale } from '@foodex/shared';
 import { apiRequest } from '../api-client';
 
@@ -158,7 +159,10 @@ export default function LoginPage() {
     <main className="auth-page grid min-h-screen lg:grid-cols-[1.15fr_0.85fr]">
       <section className="auth-intro">
         <p className="eyebrow">TECHNICAL TEST PROJECT</p>
-        <h1>Foodex</h1>
+        <div className="auth-brand">
+          <Image src="/foodex-logo-192.webp" alt="" width={112} height={112} priority unoptimized />
+          <h1>Foodex</h1>
+        </div>
         <p>{text.introText}</p>
         <div className="intro-grid">
           <span>{text.productSource}</span>

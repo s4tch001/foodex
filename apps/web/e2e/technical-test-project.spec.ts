@@ -140,6 +140,11 @@ test('starts empty, searches on demand, and clears when the input becomes blank'
     if (request.url().includes('/api/products/search')) searchRequests += 1;
   });
   await page.goto('/');
+  await expect(page.locator('.project-logo')).toBeVisible();
+  await expect(page.locator('link[rel="icon"][type="image/webp"]').first()).toHaveAttribute(
+    'href',
+    /foodex-logo-/,
+  );
   await expect(page.getByText('Better choices start with the label.')).toHaveCount(0);
   await expect(page.getByText('The food codex', { exact: true })).toHaveCount(0);
   await expect(
@@ -173,6 +178,7 @@ test('serves the branded sign-in form at the dedicated login route', async ({ pa
   await mockApi(page);
   await page.goto('/login');
   await expect(page).toHaveURL(/\/login$/);
+  await expect(page.locator('.auth-brand img')).toBeVisible();
   await expect(page.getByRole('heading', { level: 1, name: 'Foodex' })).toBeVisible();
   await expect(page.getByText('Better choices start with the label.')).toHaveCount(0);
 });

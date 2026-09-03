@@ -579,7 +579,16 @@ export default function HomePage() {
       <header className="flex items-center justify-between gap-3">
         <h1 className="site-heading">
           <a className="project-title" href="#top">
-            Foodex
+            <Image
+              className="project-logo"
+              src="/foodex-logo-32.webp"
+              alt=""
+              width={32}
+              height={32}
+              priority
+              unoptimized
+            />
+            <span>Foodex</span>
           </a>
         </h1>
         <div>
