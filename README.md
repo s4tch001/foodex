@@ -31,6 +31,12 @@ Foodex—short for **food codex**—is a focused full-stack technical assignment
   </tr>
 </table>
 
+<p align="center">
+  <img src="docs/screenshots/login-page.webp" alt="Foodex login page" width="86%" />
+  <br />
+  <sub>Dedicated sign-in page with demo credentials and Foodex branding</sub>
+</p>
+
 ## Features
 
 - Responsive Next.js search interface in English, Dutch, German, and French.
