@@ -29,13 +29,17 @@ Foodex—short for **food codex**—is a focused full-stack technical assignment
       <sub>Active subscriber view with nutrition details</sub>
     </td>
   </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="docs/screenshots/login-page.webp" alt="Foodex login page" width="100%" />
+      <br />
+      <sub>Dedicated sign-in page with demo credentials and Foodex branding</sub>
+    </td>
+  </tr>
 </table>
 
-<p align="center">
-  <img src="docs/screenshots/login-page.webp" alt="Foodex login page" width="86%" />
-  <br />
-  <sub>Dedicated sign-in page with demo credentials and Foodex branding</sub>
-</p>
+
+
 
 ## Features
 
