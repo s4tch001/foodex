@@ -14,6 +14,23 @@
 
 Foodex—short for **food codex**—is a focused full-stack technical assignment for finding packaged food through Open Food Facts. Public visitors can search and view a product's name, brand, image, and barcode. A signed-in demo user can save recent searches and start a Stripe test-mode monthly subscription; only an active or trialing subscriber receives detailed nutrition data from the backend.
 
+## Preview
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/search-results.webp" alt="Foodex search results with nutrition locked" />
+      <br />
+      <sub>Search results with subscription-gated nutrition</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/nutrition-unlocked.webp" alt="Foodex search results with nutrition unlocked" />
+      <br />
+      <sub>Active subscriber view with nutrition details</sub>
+    </td>
+  </tr>
+</table>
+
 ## Features
 
 - Responsive Next.js search interface in English, Dutch, German, and French.
